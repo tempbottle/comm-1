@@ -1,0 +1,37 @@
+#!/usr/bin/env ruby
+
+require 'bundler/setup'
+require 'comm'
+require 'optparse'
+
+options = {}
+OptionParser.new do |opts|
+  opts.banner = "Usage: comm [options]"
+
+  opts.on('-p', '--port <PORT>', Integer, 'Port to listen on') do |v|
+    options[:port] = v
+  end
+
+  opts.on("-b", "--bootstrap <HOST:PORT>", String, "Add a bootstrap connection") do |v|
+    options[:bootstrap] = v
+  end
+
+  opts.on('-m', '--message <MESSAGE>', String, "Broadcast a message to peers") do |v|
+    options[:broadcast] = v
+  end
+end.parse!
+
+port = Integer(options.fetch(:port) { 6000 })
+node = Comm::Node.new('0.0.0.0', port)
+node.async.accept_connections
+
+if bootstrap = options[:bootstrap]
+  host, port = bootstrap.split(':')
+  node.async.connect_to(host, port)
+end
+
+if broadcast = options[:broadcast]
+  loop { node.broadcast(broadcast) }
+end
+
+loop { sleep }
