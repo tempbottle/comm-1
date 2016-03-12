@@ -1,41 +1,22 @@
 # Comm
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/comm`. To experiment with that code, run `bin/console` for an interactive prompt.
+A hypothetical, distributed, encrypted, instant messaging protocol.
 
-TODO: Delete this and the text above, and describe your gem
+## Requirements
 
-## Installation
+* No centralized server
+* Messages should be stored in the network for some reasonable amount of time until recipient is available
 
-Add this line to your application's Gemfile:
+## What the what
 
-```ruby
-gem 'comm'
-```
-
-And then execute:
-
-    $ bundle
-
-Or install it yourself as:
-
-    $ gem install comm
-
-## Usage
-
-TODO: Write usage instructions here
-
-## Development
-
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
-
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
-
-## Contributing
-
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/comm.
-
-
-## License
-
-The gem is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).
-
+0. Client announces a message to the network
+  - message has a unique id
+  - message has a recipient address (public key)
+  - message has a "message" that only recipient can read (using their private key)
+0. Network nodes store and re-announce messages they receive
+0. Network nodes drop messages that they've re-announced for a reasonable amount of time, and a reasonable number of times
+0. Recipient finally gets message, announces acknowledgement
+  - acknowledgement has message's unique id
+  - acknowledgement has signature of message recipient (using their private key)
+0. Network nodes drop messages after verifying their acknowledgement
+0. Network nodes re-announce acknowledgement a reasonable number of times
