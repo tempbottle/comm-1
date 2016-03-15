@@ -19,24 +19,24 @@ OptionParser.new do |opts|
   opts.on("-b", "--bootstrap <HOST:PORT>", String, "Add a bootstrap connection") do |v|
     options[:bootstrap] = v
   end
-
-  opts.on('-m', '--message <MESSAGE>', String, "Broadcast a message to peers") do |v|
-    options[:broadcast] = v
-  end
 end.parse!
 
 port = Integer(options.fetch(:port) { 6000 })
-node.async.accept_connections
 secret = options.fetch(:secret) { 'not secret' }
 node = Comm::Node.new('0.0.0.0', port, secret: secret)
+node.async.run
 
 if bootstrap = options[:bootstrap]
   host, port = bootstrap.split(':')
   node.async.connect_to(host, port)
 end
 
-if broadcast = options[:broadcast]
-  loop { node.broadcast(broadcast) }
+loop do
+  print '> '
+  recipient, text = gets.chomp.split(': ')
+  message = Comm::Messages::Chat.new(
+    address: Comm::Address.for_content(recipient + text).to_s,
+    recipient: recipient,
+    text: text)
+  node.broadcast(message)
 end
-
-loop { sleep }

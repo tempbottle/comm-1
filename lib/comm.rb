@@ -2,6 +2,7 @@ require 'celluloid/current'
 require 'celluloid/io'
 require 'securerandom'
 require 'comm/messages'
+require 'comm/message_relay'
 require 'comm/address'
 require 'comm/peer'
 require 'comm/version'
@@ -19,6 +20,12 @@ module Comm
       @port = port
       @server = TCPServer.new(host, port)
       @peers = PeerPool.new(size: 10)
+      @message_relay = MessageRelay.new(self)
+    end
+
+    def run
+      async.accept_connections
+      @message_relay.async.run
     end
 
     def accept_connections
@@ -33,6 +40,8 @@ module Comm
     end
 
     def broadcast(message)
+      message = Messages.encode(message)
+
       peers.each do |peer|
         peer.send(message)
       end
@@ -64,20 +73,26 @@ module Comm
     end
 
     def establish_peer(socket)
-      message = Messages.encode(Messages::Synchronize.new(
+      introduction = Messages.encode(Messages::Peer.new(
         address: @address.to_s,
         host: @host,
         port: @port
       ))
-      socket.send(message.encode, 0)
-      if message = Messages.decode(socket.recv(4096, 0))
-        peer = Peer.new(
-          address: message.address,
-          host: message.host,
-          port: message.port,
-          socket: socket
-        )
-        async.add_peer(peer)
+      socket.send(introduction.encode, 0)
+
+      loop do
+        response = Messages.decode(socket.recv(4096, 0))
+        case response
+        when Messages::Peer
+          peer = Peer.new(
+            address: Address.new(response.address),
+            host: response.host,
+            port: response.port,
+            socket: socket
+          )
+          async.add_peer(peer)
+          break
+        end
       end
     rescue EOFError
       socket.close
@@ -89,6 +104,12 @@ module Comm
         case message
         when Messages::Peer
           connect_to(message.host, message.port)
+        when Messages::Chat
+          if Address.new(message.recipient) == address
+            puts "<#{peer.address}> #{message.text}"
+          else
+            @message_relay.add message
+          end
         end
       end
     rescue EOFError
