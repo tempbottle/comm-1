@@ -10,7 +10,10 @@ module Comm
     end
 
     def announcement
-      Messages::Peer.new(address: address, host: host, port: port)
+      Messages::Peer.new(
+        address: address.to_s,
+        host: host,
+        port: port)
     end
 
     def send(message)

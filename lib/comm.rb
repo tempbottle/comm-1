@@ -2,6 +2,7 @@ require 'celluloid/current'
 require 'celluloid/io'
 require 'securerandom'
 require 'comm/messages'
+require 'comm/address'
 require 'comm/peer'
 require 'comm/version'
 require 'comm/peer_pool'
@@ -10,8 +11,10 @@ module Comm
   class Node
     include Celluloid::IO
 
-    def initialize(host, port, address: SecureRandom.uuid)
-      @address = address
+    attr_reader :address
+
+    def initialize(host, port, secret:)
+      @address = Address.for_content(secret)
       @host = host
       @port = port
       @server = TCPServer.new(host, port)
@@ -19,12 +22,12 @@ module Comm
     end
 
     def accept_connections
-      puts "Accepting connections as #{@address}"
+      info "-> Accepting connections as #{@address}"
       loop { async.establish_peer(@server.accept) }
     end
 
     def connect_to(host, port)
-      puts "-> Trying to connect to #{host}:port"
+      info "-> Trying to connect to #{host}:#{port}"
       socket = TCPSocket.open(host, port)
       async.establish_peer(socket)
     end
@@ -49,20 +52,20 @@ module Comm
     def announce_peer(peer_to_announce)
       peers.each do |peer|
         next if peer == peer_to_announce
-        puts "-> Announcing #{peer_to_announce.inspect} to #{peer.inspect}"
+        info "-> Announcing #{peer_to_announce.inspect} to #{peer.inspect}"
         peer.send(Messages.encode(peer_to_announce.announcement))
       end
     end
 
     def drop_peer(peer)
-      puts "-> Dropping peer #{peer.inspect}"
+      info "-> Dropping peer #{peer.inspect}"
       peer.disconnect
       peers.remove(peer)
     end
 
     def establish_peer(socket)
       message = Messages.encode(Messages::Synchronize.new(
-        address: @address,
+        address: @address.to_s,
         host: @host,
         port: @port
       ))
@@ -83,7 +86,6 @@ module Comm
     def listen_to(peer)
       loop do
         message = Messages.decode(peer.recv(4096))
-        puts "-> Message from #{peer.inspect}: #{message.inspect}"
         case message
         when Messages::Peer
           connect_to(message.host, message.port)

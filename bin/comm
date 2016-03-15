@@ -8,6 +8,10 @@ options = {}
 OptionParser.new do |opts|
   opts.banner = "Usage: comm [options]"
 
+  opts.on('-s', '--secret <PHRASE>', String, 'Your secret') do |v|
+    options[:secret] = v
+  end
+
   opts.on('-p', '--port <PORT>', Integer, 'Port to listen on') do |v|
     options[:port] = v
   end
@@ -22,8 +26,9 @@ OptionParser.new do |opts|
 end.parse!
 
 port = Integer(options.fetch(:port) { 6000 })
-node = Comm::Node.new('0.0.0.0', port)
 node.async.accept_connections
+secret = options.fetch(:secret) { 'not secret' }
+node = Comm::Node.new('0.0.0.0', port, secret: secret)
 
 if bootstrap = options[:bootstrap]
   host, port = bootstrap.split(':')
