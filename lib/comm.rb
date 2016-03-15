@@ -4,6 +4,7 @@ require 'securerandom'
 require 'comm/messages'
 require 'comm/peer'
 require 'comm/version'
+require 'comm/peer_pool'
 
 module Comm
   class Node
@@ -14,7 +15,7 @@ module Comm
       @host = host
       @port = port
       @server = TCPServer.new(host, port)
-      @peers = {}
+      @peers = PeerPool.new(size: 10)
     end
 
     def accept_connections
@@ -29,23 +30,24 @@ module Comm
     end
 
     def broadcast(message)
-      @peers.each do |address, peer|
+      peers.each do |peer|
         peer.send(message)
       end
     end
 
     private
 
+    attr_reader :peers
+
     def add_peer(peer)
-      return if @peers.has_key?(peer.address)
-      puts "-> Adding peer #{peer.inspect}"
-      @peers[peer.address] = peer
-      async.listen_to(peer)
-      async.announce_peer(peer)
+      peers.add(peer) do
+        async.listen_to(peer)
+        async.announce_peer(peer)
+      end
     end
 
     def announce_peer(peer_to_announce)
-      @peers.each do |address, peer|
+      peers.each do |peer|
         next if peer == peer_to_announce
         puts "-> Announcing #{peer_to_announce.inspect} to #{peer.inspect}"
         peer.send(Messages.encode(peer_to_announce.announcement))
@@ -55,7 +57,7 @@ module Comm
     def drop_peer(peer)
       puts "-> Dropping peer #{peer.inspect}"
       peer.disconnect
-      @peers.delete(peer.address)
+      peers.remove(peer)
     end
 
     def establish_peer(socket)
