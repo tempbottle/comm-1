@@ -11,6 +11,7 @@ require 'comm/peer_pool'
 module Comm
   class Node
     include Celluloid::IO
+    include Celluloid::Internals::Logger
 
     attr_reader :address
 
