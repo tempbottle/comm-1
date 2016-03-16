@@ -26,7 +26,7 @@ module Comm
 
     def run
       async.accept_connections
-      @message_relay.async.run
+      message_relay.async.run
     end
 
     def accept_connections
@@ -50,7 +50,7 @@ module Comm
 
     private
 
-    attr_reader :peers
+    attr_reader :peers, :message_relay
 
     def add_peer(peer)
       peers.add(peer) do
@@ -109,7 +109,7 @@ module Comm
           if Address.new(message.recipient) == address
             puts "<#{peer.address}> #{message.text}"
           else
-            @message_relay.add message
+            message_relay.add message
           end
         end
       end
