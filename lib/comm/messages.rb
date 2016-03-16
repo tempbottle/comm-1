@@ -8,7 +8,7 @@ module Comm
       required :string, :text, 3
 
       def hash
-        address.hash
+        [self.class, address.hash].hash
       end
 
       def eql?(other)
