@@ -21,7 +21,7 @@ module Comm
 
     def relay_message(message)
       @timers[message] = @timer_group.after(delay_for(message)) do
-        info "-> Relaying message"
+        info "-> Relaying message #{message.inspect}"
         @timers.delete(message)
         @messages[message] += 1
         @node.broadcast(message)

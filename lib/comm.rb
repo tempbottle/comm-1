@@ -7,6 +7,7 @@ require 'comm/address'
 require 'comm/peer'
 require 'comm/version'
 require 'comm/peer_pool'
+require 'logger'
 
 module Comm
   class Node
@@ -15,13 +16,15 @@ module Comm
 
     attr_reader :address
 
-    def initialize(host, port, secret:)
+    def initialize(host, port, secret:, logger: ::Logger.new('comm.log'))
       @address = Address.for_content(secret)
       @host = host
       @port = port
       @server = TCPServer.new(host, port)
       @peers = PeerPool.new(size: 10)
       @message_relay = MessageRelay.new(self)
+
+      Celluloid.logger = logger
     end
 
     def run
@@ -54,6 +57,7 @@ module Comm
 
     def add_peer(peer)
       peers.add(peer) do
+        info "-> Adding peer #{peer.inspect}"
         async.listen_to(peer)
         async.announce_peer(peer)
       end
