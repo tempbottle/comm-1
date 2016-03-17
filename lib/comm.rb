@@ -7,6 +7,8 @@ require 'comm/address'
 require 'comm/peer'
 require 'comm/version'
 require 'comm/peer_pool'
+require 'comm/null_client'
+require 'comm/cli_client'
 require 'logger'
 
 module Comm
@@ -20,11 +22,17 @@ module Comm
       @address = Address.for_content(secret)
       @host = host
       @port = port
+
+      @client = NullClient.new
       @server = TCPServer.new(host, port)
       @peers = PeerPool.new(size: 10)
       @message_relay = MessageRelay.new(self)
 
       Celluloid.logger = logger
+    end
+
+    def attach_client(client)
+      @client = client
     end
 
     def run
@@ -53,13 +61,14 @@ module Comm
 
     private
 
-    attr_reader :peers, :message_relay
+    attr_reader :client, :peers, :message_relay
 
     def add_peer(peer)
       peers.add(peer) do
         info "-> Adding peer #{peer.inspect}"
         async.listen_to(peer)
         async.announce_peer(peer)
+        client.add_peer(peer)
       end
     end
 
@@ -111,7 +120,7 @@ module Comm
           connect_to(message.host, message.port)
         when Messages::Chat
           if Address.new(message.recipient) == address
-            puts "<#{peer.address}> #{message.text}"
+            client.add_message(message)
           else
             message_relay.add message
           end

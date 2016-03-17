@@ -31,5 +31,9 @@ module Comm
     def inspect
       "<Comm::Peer address=#{address}>"
     end
+
+    def hash
+      [self.class, address].hash
+    end
   end
 end

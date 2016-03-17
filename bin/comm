@@ -24,6 +24,8 @@ end.parse!
 port = Integer(options.fetch(:port) { 6000 })
 secret = options.fetch(:secret) { 'not secret' }
 node = Comm::Node.new('0.0.0.0', port, secret: secret)
+client = Comm::CliClient.new(node)
+
 node.async.run
 
 if bootstrap = options[:bootstrap]
@@ -31,12 +33,4 @@ if bootstrap = options[:bootstrap]
   node.async.connect_to(host, port)
 end
 
-loop do
-  print '> '
-  recipient, text = gets.chomp.split(': ')
-  message = Comm::Messages::Chat.new(
-    address: Comm::Address.for_content(recipient + text).to_s,
-    recipient: recipient,
-    text: text)
-  node.broadcast(message)
-end
+client.run
