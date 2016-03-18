@@ -7,6 +7,7 @@ module Comm
       @node = node
       @node.attach_client(self)
 
+      Curses.noecho
       @window = Curses::Window.new(0, 0, 0, 0)
       @transcript = @window.subwin(Curses.lines - 1, Curses.cols - 40, 0, 0)
       @transcript.scrollok(true)
@@ -15,11 +16,12 @@ module Comm
       @contacts = @window.subwin(Curses.lines - 1, 40, 0, Curses.cols - 40)
       @contacts.addstr("Hello")
       @contacts.refresh
-      @peers = Set.new
+      @peers = []
+      @peer_idx = 0
     end
 
-    def add_message(message)
-      @transcript.addstr("#{message.text}")
+    def add_message(message_payload)
+      @transcript.addstr("<#{message_payload.sender}> #{message_payload.text}")
       @transcript.scroll
       @transcript.setpos(@transcript.cury, 0)
       @transcript.refresh
@@ -36,15 +38,31 @@ module Comm
     end
 
     def run
+      buffer = ''
+
+      @input.keypad = true
       loop do
-        text = @input.getstr
+        chr = @input.getch
+        case chr
+        when Curses::Key::UP
+          previous_peer
+        when Curses::Key::DOWN
+          next_peer
+        when Curses::Key::BACKSPACE, 127
+          buffer.chop!
+        when Curses::Key::ENTER, 10
+          @input.clear
+          @input.refresh
+          @input.setpos(0, 0)
+          node.deliver_chat(buffer, to: selected_peer)
+          buffer.clear
+        else
+          buffer << chr
+        end
+
         @input.clear
-        recipient = 'fe05bcdcdc4928012781a5f1a2a77cbb5398e106'
-        message = Comm::Messages::Chat.new(
-          address: Comm::Address.for_content(recipient + text).to_s,
-          recipient: recipient,
-          text: text)
-        node.broadcast(message)
+        @input.addstr(buffer)
+        @input.refresh
       end
     end
 
@@ -52,10 +70,34 @@ module Comm
 
     attr_reader :node
 
+    def previous_peer
+      @peer_idx -= 1
+      render_peers
+    end
+
+    def next_peer
+      @peer_idx += 1
+      render_peers
+    end
+
+    def selected_peer?(peer)
+      selected_peer == peer
+    end
+
+    def selected_peer
+      @peers.fetch(@peer_idx)
+    end
+
     def render_peers
       @contacts.clear
       @peers.each do |peer|
-        @contacts.addstr(peer.address.to_s)
+        if selected_peer?(peer)
+          @contacts.standout
+          @contacts.addstr(peer.address.to_s)
+          @contacts.standend
+        else
+          @contacts.addstr(peer.address.to_s)
+        end
       end
       @contacts.refresh
     end

@@ -2,10 +2,16 @@ require 'protobuf/message'
 
 module Comm
   module Messages
+    class ChatPayload < Protobuf::Message
+      required :string, :sender, 1
+      required :string, :text, 3
+      required :int64, :timestamp, 4
+    end
+
     class Chat < Protobuf::Message
       required :string, :address, 1
       required :string, :recipient, 2
-      required :string, :text, 3
+      required :string, :payload, 3
 
       def hash
         [self.class, address.hash].hash

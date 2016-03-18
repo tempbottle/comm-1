@@ -3,14 +3,15 @@ require 'celluloid/io'
 require 'logger'
 require 'openssl'
 require 'securerandom'
-require 'comm/messages'
-require 'comm/message_relay'
 require 'comm/address'
-require 'comm/peer'
-require 'comm/version'
-require 'comm/peer_pool'
-require 'comm/null_client'
 require 'comm/cli_client'
+require 'comm/message_relay'
+require 'comm/message_registry'
+require 'comm/messages'
+require 'comm/null_client'
+require 'comm/peer'
+require 'comm/peer_pool'
+require 'comm/version'
 
 module Comm
   class Node
@@ -28,6 +29,7 @@ module Comm
       @server = TCPServer.new(host, port)
       @peers = PeerPool.new(size: 10)
       @message_relay = MessageRelay.new(self)
+      @messages = MessageRegistry.new
 
       Celluloid.logger = logger
     end
@@ -39,6 +41,18 @@ module Comm
     def run
       async.accept_connections
       message_relay.async.run
+    end
+
+    def deliver_chat(text, to: recipient)
+      payload = Messages::ChatPayload.new(
+        sender: address.to_s,
+        text: text,
+        timestamp: Time.now.to_i).encode
+      message = Messages::Chat.new(
+        address: Address.for_content(payload).to_s,
+        recipient: to.address.to_s,
+        payload: payload)
+      async.broadcast(message)
     end
 
     def accept_connections
@@ -62,7 +76,7 @@ module Comm
 
     private
 
-    attr_reader :client, :peers, :message_relay
+    attr_reader :client, :peers, :message_relay, :messages
 
     def add_peer(peer)
       peers.add(peer) do
@@ -122,7 +136,10 @@ module Comm
           connect_to(message.host, message.port)
         when Messages::Chat
           if Address.new(message.recipient) == address
-            client.add_message(message)
+            messages.add(message) do
+              payload = Messages::ChatPayload.decode(message.payload)
+              client.add_message(payload)
+            end
           else
             message_relay.add message
           end
