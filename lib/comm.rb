@@ -1,5 +1,7 @@
 require 'celluloid/current'
 require 'celluloid/io'
+require 'logger'
+require 'openssl'
 require 'securerandom'
 require 'comm/messages'
 require 'comm/message_relay'
@@ -9,7 +11,6 @@ require 'comm/version'
 require 'comm/peer_pool'
 require 'comm/null_client'
 require 'comm/cli_client'
-require 'logger'
 
 module Comm
   class Node
@@ -18,8 +19,8 @@ module Comm
 
     attr_reader :address
 
-    def initialize(host, port, secret:, logger: ::Logger.new('comm.log'))
-      @address = Address.for_content(secret)
+    def initialize(host, port, key:, logger: ::Logger.new('comm.log'))
+      @address = Address.for_content(key.export)
       @host = host
       @port = port
 
