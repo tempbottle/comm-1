@@ -26,7 +26,12 @@ module Comm
     end
 
     def add_peer(peer)
-      @peers << peer
+      @peers |= [peer]
+      render_peers
+    end
+
+    def remove_peer(peer)
+      @peers.delete(peer)
       render_peers
     end
 

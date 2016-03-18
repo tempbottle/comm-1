@@ -85,6 +85,7 @@ module Comm
       info "-> Dropping peer #{peer.inspect}"
       peer.disconnect
       peers.remove(peer)
+      client.remove_peer(peer)
     end
 
     def establish_peer(socket)
