@@ -54,7 +54,11 @@ module Comm
           @input.clear
           @input.refresh
           @input.setpos(0, 0)
-          node.deliver_chat(buffer, to: @peers.selected)
+          if buffer[0] == ?/
+            handle_command(buffer)
+          else
+            node.deliver_chat(buffer, to: @peers.selected.address)
+          end
           buffer.clear
         when String
           buffer << chr
@@ -70,5 +74,16 @@ module Comm
     private
 
     attr_reader :node
+
+    def handle_command(cmd)
+      cmd = cmd[1..-1]
+      cmd, *args = cmd.split(/\s+/)
+      case cmd
+      when 'msg'
+        recipient, *message = args
+        message = message.join(' ')
+        node.deliver_chat(message, to: recipient)
+      end
+    end
   end
 end

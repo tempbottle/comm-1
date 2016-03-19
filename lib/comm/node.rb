@@ -34,13 +34,14 @@ module Comm
     end
 
     def deliver_chat(text, to: recipient)
+      recipient = Comm::Address(to)
       payload = Messages::ChatPayload.new(
         sender: address.to_s,
         text: text,
         timestamp: Time.now.to_i).encode
       message = Messages::Chat.new(
         address: Address.for_content(payload).to_s,
-        recipient: to.address.to_s,
+        recipient: recipient.to_s,
         payload: payload)
 
       message_relay.add(message)
