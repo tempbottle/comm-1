@@ -20,7 +20,7 @@ module Comm
 
     attr_reader :address
 
-    def initialize(host, port, key:, logger: ::Logger.new('comm.log'))
+    def initialize(host, port, key:, logger: nil)
       @address = Address.for_content(key.public_key.export)
       @host = host
       @port = port
@@ -31,7 +31,7 @@ module Comm
       @message_relay = MessageRelay.new(self)
       @messages = MessageRegistry.new
 
-      Celluloid.logger = logger
+      Celluloid.logger = logger || ::Logger.new("comm-#{address.to_s}.log")
     end
 
     def attach_client(client)
