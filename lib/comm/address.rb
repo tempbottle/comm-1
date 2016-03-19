@@ -41,4 +41,13 @@ module Comm
       @address
     end
   end
+
+  def self.Address(input)
+    case input
+    when Address
+      input
+    when String
+      Address.new(input)
+    end
+  end
 end
