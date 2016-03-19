@@ -44,7 +44,7 @@ module Comm
     end
 
     def serialize
-      Messages::Peers(peers: @peers.map(&:serialize))
+      Messages::Peers.new(peers: @peers.map(&:serialize))
     end
 
     private
