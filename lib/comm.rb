@@ -57,7 +57,8 @@ module Comm
         address: Address.for_content(payload).to_s,
         recipient: to.address.to_s,
         payload: payload)
-      async.broadcast(message)
+
+      message_relay.add(message)
     end
 
     def accept_connections
