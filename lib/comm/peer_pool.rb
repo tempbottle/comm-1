@@ -1,13 +1,16 @@
 require 'set'
+
 module Comm
   class PeerPool
-    def initialize(size: 2)
+    def initialize(node, size: 2)
+      @node = node
       @peers = Set.new
       @size = size
     end
 
     def add(peer, &on_add)
       if @peers.add?(peer)
+        cull
         if @peers.include?(peer)
           puts "-> Added peer #{peer.inspect}"
           yield peer
@@ -21,8 +24,18 @@ module Comm
       @peers.each(&block)
     end
 
+    def nearest_to(address)
+      @peers.sort_by { |p| p.address.distance_from(address) }
+    end
+
     def remove(peer)
       @peers.delete(peer)
+    end
+
+    private
+
+    def cull
+      @peers = nearest_to(@node.address).first(@size).to_set
     end
   end
 end
