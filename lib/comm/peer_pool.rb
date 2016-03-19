@@ -12,7 +12,7 @@ module Comm
       if @peers.add?(peer)
         cull
         if @peers.include?(peer)
-          puts "-> Added peer #{peer.inspect}"
+          info "-> Added peer #{peer.inspect}"
           yield peer
         end
       end
