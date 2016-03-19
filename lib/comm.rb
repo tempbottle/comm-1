@@ -43,6 +43,11 @@ module Comm
       message_relay.async.run
     end
 
+    def stop
+      message_relay.stop
+      info 'Stopping node'
+    end
+
     def deliver_chat(text, to: recipient)
       payload = Messages::ChatPayload.new(
         sender: address.to_s,

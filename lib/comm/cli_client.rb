@@ -37,7 +37,12 @@ module Comm
       render_peers
     end
 
+    def stop
+      @stopped = true
+    end
+
     def run
+      @stopped = false
       buffer = ''
 
       @input.keypad = true
@@ -56,13 +61,14 @@ module Comm
           @input.setpos(0, 0)
           node.deliver_chat(buffer, to: selected_peer)
           buffer.clear
-        else
+        when String
           buffer << chr
         end
 
         @input.clear
         @input.addstr(buffer)
         @input.refresh
+        break if @stopped
       end
     end
 

@@ -34,6 +34,12 @@ module Comm
       async.run
     end
 
+    def stop
+      @timers.each_value(&:cancel)
+      @timer_group.wait
+      info 'Stopping message relay'
+    end
+
     private
 
     def delay_for(message)

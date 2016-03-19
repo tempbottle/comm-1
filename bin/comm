@@ -38,4 +38,9 @@ if bootstrap = options[:bootstrap]
   node.async.connect_to(host, port)
 end
 
+Signal.trap(:INT) do
+  client.stop
+end
+
 client.run
+node.stop
