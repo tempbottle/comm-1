@@ -4,53 +4,66 @@ module Comm
   class MessageRelay
     include Celluloid::IO
     include Celluloid::Internals::Logger
+
     THRESHOLD = 4
+    RELAY_FREQUENCY = 10
 
-    def initialize(node)
-      @node = node
-      @messages = Hash.new(0)
-      @timer_group = Timers::Group.new
-      @timers = {}
-    end
+    class Scheduler
+      attr_reader :count, :scheduled
 
-    def add(message)
-      return if relaying?(message)
+      def initialize
+        @count = 0
+        @scheduled = Time.now.to_i
+      end
 
-      info "-> Adding message to relay"
-      async.relay_message(message)
-    end
+      def increment
+        @count += 1
+        @scheduled = Time.now.to_i + delay
+      end
 
-    def relay_message(message)
-      return if @messages[message] > THRESHOLD
+      private
 
-      @timers[message] = @timer_group.after(delay_for(message)) do
-        info "-> Relaying message #{message.inspect}"
-        @timers.delete(message)
-        @messages[message] += 1
-        @node.broadcast(message)
-        async.add(message)
+      def delay
+        @count ** 2 - 1
       end
     end
 
+    def initialize(node)
+      @node = node
+      @messages = {}
+      @timers = Timers::Group.new
+    end
+
+    def add(message)
+      return if @messages.has_key?(message)
+
+      info "-> Adding message to relay"
+      @messages[message] = Scheduler.new
+    end
+
+    def relay_message(message)
+      return if @messages[message].count > THRESHOLD
+
+      info "-> Relaying message #{message.inspect}"
+      @node.broadcast(message)
+      @messages[message].increment
+    end
+
     def run
-      @timer_group.wait
-      async.run
+      @timer = @timers.now_and_every(RELAY_FREQUENCY) do
+        @messages.each do |m, s|
+          if s.scheduled <= Time.now.to_i
+            relay_message(m)
+          end
+        end
+      end
+
+      loop { @timers.wait; sleep 0 }
     end
 
     def stop
-      @timers.each_value(&:cancel)
-      @timer_group.wait
       info 'Stopping message relay'
-    end
-
-    private
-
-    def delay_for(message)
-      @messages[message] ** 2 - 1
-    end
-
-    def relaying?(message)
-      @timers.has_key?(message)
+      @timer.cancel
     end
   end
 end

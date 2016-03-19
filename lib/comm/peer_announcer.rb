@@ -17,7 +17,7 @@ module Comm
         announce_a_peer
       end
       info 'Announcing peers'
-      loop { @timers.wait }
+      loop { @timers.wait; sleep 0 }
     end
 
     def stop

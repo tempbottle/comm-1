@@ -35,9 +35,11 @@ module Comm
     end
 
     def stop
-      message_relay.stop
-      peer_announcer.stop
       info 'Stopping node'
+      message_relay.async.stop
+      peer_announcer.async.stop
+      message_relay.terminate
+      peer_announcer.terminate
     end
 
     def deliver_chat(text, to: recipient)
