@@ -95,7 +95,6 @@ module Comm
 
     def handle_connection(socket)
       message = Messages.decode_from(socket.to_io).unwrap
-      info "-> Recv message: #{message.inspect}"
 
       case message
       when Messages::Peers
