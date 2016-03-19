@@ -4,6 +4,7 @@ module Comm
   class MessageRelay
     include Celluloid::IO
     include Celluloid::Internals::Logger
+    THRESHOLD = 4
 
     def initialize(node)
       @node = node
@@ -20,6 +21,8 @@ module Comm
     end
 
     def relay_message(message)
+      return if @messages[message] > THRESHOLD
+
       @timers[message] = @timer_group.after(delay_for(message)) do
         info "-> Relaying message #{message.inspect}"
         @timers.delete(message)
