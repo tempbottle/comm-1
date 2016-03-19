@@ -27,6 +27,10 @@ module Comm
       self.address == other.address
     end
 
+    def <=>(other)
+      address <=> other.address
+    end
+
     def inspect
       "<Comm::Peer address=#{address} host=#{host} port=#{port}>"
     end

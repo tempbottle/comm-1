@@ -29,6 +29,10 @@ module Comm
       [self.class, @address].hash
     end
 
+    def <=>(other)
+      to_i <=> other.to_i
+    end
+
     def to_i
       @address.to_i(16)
     end
