@@ -16,7 +16,7 @@ module Comm
     def add(peer, &on_add)
       if @peers.add?(peer)
         if @peers.include?(peer)
-          info "-> Added peer #{peer.inspect}"
+          puts "-> Added peer #{peer.inspect}"
           yield peer
         end
       end
