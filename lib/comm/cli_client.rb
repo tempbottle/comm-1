@@ -77,12 +77,15 @@ module Comm
     attr_reader :node
 
     def previous_peer
-      @peer_idx -= 1
+      @peer_idx = (@peer_idx - 1)
+      if @peer_idx < 0
+        @peer_idx = @peers.size - 1
+      end
       render_peers
     end
 
     def next_peer
-      @peer_idx += 1
+      @peer_idx = (@peer_idx + 1) % @peers.size
       render_peers
     end
 
