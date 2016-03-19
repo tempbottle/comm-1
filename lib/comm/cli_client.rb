@@ -1,5 +1,6 @@
 require 'curses'
 require 'set'
+require 'comm/cli_client/peer_list'
 
 module Comm
   class CliClient
@@ -9,15 +10,11 @@ module Comm
 
       Curses.noecho
       @window = Curses::Window.new(0, 0, 0, 0)
-      @transcript = @window.subwin(Curses.lines - 1, Curses.cols - 40, 0, 0)
+      @transcript = @window.subwin(Curses.lines - 1, Curses.cols - 42, 0, 0)
       @transcript.scrollok(true)
       @transcript.setpos(@transcript.maxy - 1, 0)
       @input = @window.subwin(1, 0, Curses.lines - 1, 0)
-      @contacts = @window.subwin(Curses.lines - 1, 40, 0, Curses.cols - 40)
-      @contacts.addstr("Hello")
-      @contacts.refresh
-      @peers = []
-      @peer_idx = 0
+      @peers = PeerList.new(@window)
     end
 
     def add_message(message_payload)
@@ -28,13 +25,11 @@ module Comm
     end
 
     def add_peer(peer)
-      @peers |= [peer]
-      render_peers
+      @peers.add(peer)
     end
 
     def remove_peer(peer)
-      @peers.delete(peer)
-      render_peers
+      @peers.remove(peer)
     end
 
     def stop
@@ -50,16 +45,16 @@ module Comm
         chr = @input.getch
         case chr
         when Curses::Key::UP
-          previous_peer
+          @peers.select_previous
         when Curses::Key::DOWN
-          next_peer
+          @peers.select_next
         when Curses::Key::BACKSPACE, 127
           buffer.chop!
         when Curses::Key::ENTER, 10
           @input.clear
           @input.refresh
           @input.setpos(0, 0)
-          node.deliver_chat(buffer, to: selected_peer)
+          node.deliver_chat(buffer, to: @peers.selected)
           buffer.clear
         when String
           buffer << chr
@@ -75,40 +70,5 @@ module Comm
     private
 
     attr_reader :node
-
-    def previous_peer
-      @peer_idx = (@peer_idx - 1)
-      if @peer_idx < 0
-        @peer_idx = @peers.size - 1
-      end
-      render_peers
-    end
-
-    def next_peer
-      @peer_idx = (@peer_idx + 1) % @peers.size
-      render_peers
-    end
-
-    def selected_peer?(peer)
-      selected_peer == peer
-    end
-
-    def selected_peer
-      @peers.fetch(@peer_idx)
-    end
-
-    def render_peers
-      @contacts.clear
-      @peers.each do |peer|
-        if selected_peer?(peer)
-          @contacts.standout
-          @contacts.addstr(peer.address.to_s)
-          @contacts.standend
-        else
-          @contacts.addstr(peer.address.to_s)
-        end
-      end
-      @contacts.refresh
-    end
   end
 end
