@@ -35,11 +35,18 @@ module Comm
     class Message < Protobuf::Message
       optional Messages::Peer, :peer, 1
       optional Messages::Chat, :chat, 2
+
+      def unwrap
+        peer or chat
+      end
     end
 
     def self.decode(encoded_message)
-      message = Message.decode(encoded_message)
-      message.peer or message.chat
+      Message.decode(encoded_message)
+    end
+
+    def self.decode_from(io)
+      Message.decode_from(io)
     end
 
     def self.encode(message)

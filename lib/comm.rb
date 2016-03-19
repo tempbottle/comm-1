@@ -62,13 +62,19 @@ module Comm
 
     def accept_connections
       info "-> Accepting connections as #{@address}"
-      loop { async.establish_peer(@server.accept) }
+      loop { async.handle_connection(@server.accept) }
     end
 
     def connect_to(host, port)
       info "-> Trying to connect to #{host}:#{port}"
-      socket = TCPSocket.open(host, port)
-      async.establish_peer(socket)
+      TCPSocket.open(host, port) do |socket|
+        introduction = Messages.encode(Messages::Peer.new(
+          address: @address.to_s,
+          host: @host,
+          port: @port
+        ))
+        socket.send(introduction.encode, 0)
+      end
     end
 
     def broadcast(message)
@@ -86,9 +92,9 @@ module Comm
     def add_peer(peer)
       peers.add(peer) do
         info "-> Adding peer #{peer.inspect}"
-        async.listen_to(peer)
         async.announce_peer(peer)
         client.add_peer(peer)
+        async.connect_to(peer.host, peer.port);
       end
     end
 
@@ -100,58 +106,31 @@ module Comm
       end
     end
 
-    def drop_peer(peer)
-      info "-> Dropping peer #{peer.inspect}"
-      peer.disconnect
-      peers.remove(peer)
-      client.remove_peer(peer)
-    end
+    def handle_connection(socket)
+      message = Messages.decode_from(socket.to_io).unwrap
+      info "-> Recv message: #{message.inspect}"
 
-    def establish_peer(socket)
-      introduction = Messages.encode(Messages::Peer.new(
-        address: @address.to_s,
-        host: @host,
-        port: @port
-      ))
-      socket.send(introduction.encode, 0)
-
-      loop do
-        response = Messages.decode(socket.recv(4096, 0))
-        case response
-        when Messages::Peer
-          peer = Peer.new(
-            address: Address.new(response.address),
-            host: response.host,
-            port: response.port,
-            socket: socket
-          )
-          async.add_peer(peer)
-          break
-        end
-      end
-    rescue EOFError
-      socket.close
-    end
-
-    def listen_to(peer)
-      loop do
-        message = Messages.decode(peer.recv(4096))
-        case message
-        when Messages::Peer
-          connect_to(message.host, message.port)
-        when Messages::Chat
-          if Address.new(message.recipient) == address
-            messages.add(message) do
-              payload = Messages::ChatPayload.decode(message.payload)
-              client.add_message(payload)
-            end
-          else
-            message_relay.add message
+      case message
+      when Messages::Peer
+        peer = Peer.new(
+          address: Address.new(message.address),
+          host: message.host,
+          port: message.port)
+        async.add_peer(peer)
+      when Messages::Chat
+        if Address.new(message.recipient) == address
+          messages.add(message) do
+            payload = Messages::ChatPayload.decode(message.payload)
+            client.add_message(payload)
           end
+        else
+          message_relay.add message
         end
       end
+
     rescue EOFError
-      drop_peer(peer)
+    ensure
+      socket.close
     end
   end
 end
