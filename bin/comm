@@ -24,7 +24,7 @@ end.parse!
 if keyfile = options[:keyfile]
   key = OpenSSL::PKey::RSA.new(File.read(keyfile))
 else
-  key = OpenSSL::PKey::RSA.open(4096)
+  key = OpenSSL::PKey::RSA.generate(4096)
 end
 
 port = Integer(options.fetch(:port) { 6000 })
