@@ -11,6 +11,7 @@ require 'comm/messages'
 require 'comm/node'
 require 'comm/null_client'
 require 'comm/peer'
+require 'comm/peer_announcer'
 require 'comm/peer_pool'
 require 'comm/version'
 

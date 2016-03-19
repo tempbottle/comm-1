@@ -32,12 +32,25 @@ module Comm
       required :int32, :port, 3
     end
 
+    class Peers < Protobuf::Message
+      repeated Peer, :peers, 1
+    end
+
     class Message < Protobuf::Message
-      optional Messages::Peer, :peer, 1
-      optional Messages::Chat, :chat, 2
+      optional Messages::Chat, :chat, 1
+      optional Messages::Peers, :peers, 2
 
       def unwrap
-        peer or chat
+        chat or peers
+      end
+
+      def self.wrap(message)
+        case message
+        when Chat
+          Message.new(chat: message)
+        when Peers
+          Message.new(peers: message)
+        end
       end
     end
 
@@ -50,12 +63,7 @@ module Comm
     end
 
     def self.encode(message)
-      case message
-      when Peer
-        Message.new(peer: message)
-      when Chat
-        Message.new(chat: message)
-      end.encode
+      Message.wrap(message).encode
     end
   end
 end

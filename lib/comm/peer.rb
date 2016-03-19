@@ -8,13 +8,6 @@ module Comm
       @port = port
     end
 
-    def announcement
-      Messages::Peer.new(
-        address: address.to_s,
-        host: host,
-        port: port)
-    end
-
     def hash
       [self.class, address].hash
     end
@@ -40,6 +33,13 @@ module Comm
         socket.send(message, 0)
       end
     rescue Errno::ECONNREFUSED
+    end
+
+    def serialize
+      Messages::Peer.new(
+        address: address.to_s,
+        host: host,
+        port: port)
     end
   end
 end
