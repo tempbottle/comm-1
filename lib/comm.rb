@@ -21,7 +21,7 @@ module Comm
     attr_reader :address
 
     def initialize(host, port, key:, logger: ::Logger.new('comm.log'))
-      @address = Address.for_content(key.export)
+      @address = Address.for_content(key.public_key.export)
       @host = host
       @port = port
 
