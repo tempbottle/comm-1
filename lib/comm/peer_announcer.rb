@@ -5,7 +5,7 @@ module Comm
     include Celluloid::IO
     include Celluloid::Internals::Logger
 
-    ANNOUNCE_FREQUENCY = 10 # seconds
+    ANNOUNCE_FREQUENCY = 1 # seconds
 
     def initialize(peers)
       @peers = peers

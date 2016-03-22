@@ -6,7 +6,7 @@ module Comm
     include Celluloid::Internals::Logger
 
     THRESHOLD = 4
-    RELAY_FREQUENCY = 10
+    RELAY_FREQUENCY = 1
 
     class Scheduler
       attr_reader :count, :scheduled
