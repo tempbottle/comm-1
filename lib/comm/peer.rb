@@ -8,16 +8,16 @@ module Comm
       @port = port
     end
 
-    def hash
-      [self.class, address].hash
-    end
-
     def ==(other)
       self.address == other.address
     end
 
     def <=>(other)
       address <=> other.address
+    end
+
+    def hash
+      [self.class, address].hash
     end
 
     def inspect
