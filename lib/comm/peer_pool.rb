@@ -6,7 +6,7 @@ module Comm
     extend Forwardable
     def_delegators :peers, :each, :empty?, :map, :to_a
 
-    def initialize(node, peers: Set.new([node.self_peer]), size: 2)
+    def initialize(node, peers: Set.new([node.self_peer]), size: 10)
       @node = node
       @peers = peers
       @size = size
