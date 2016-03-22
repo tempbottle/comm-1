@@ -23,8 +23,7 @@ module Comm
     end
 
     def except(*exclusions)
-      peers = @peers - exclusions
-      self.class.new(@node, peers: peers, size: @size)
+      subset(@peers - exclusions)
     end
 
     def except_self
@@ -39,8 +38,12 @@ module Comm
       @peers.delete(peer)
     end
 
-    def sample(*n)
-      @peers.to_a.sample(*n)
+    def sample(n = nil)
+      if n
+        subset(@peers.to_a.sample(n))
+      else
+        @peers.to_a.sample
+      end
     end
 
     def serialize
@@ -53,6 +56,10 @@ module Comm
 
     def cull
       @peers = nearest_to(@node.address).first(@size).to_set
+    end
+
+    def subset(peers)
+      self.class.new(@node, peers: peers, size: @size)
     end
   end
 end

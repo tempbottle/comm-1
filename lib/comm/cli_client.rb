@@ -24,12 +24,8 @@ module Comm
       @transcript.refresh
     end
 
-    def add_peer(peer)
-      @peers.add(peer)
-    end
-
-    def remove_peer(peer)
-      @peers.remove(peer)
+    def update_peers(peers)
+      @peers.update(peers)
     end
 
     def stop

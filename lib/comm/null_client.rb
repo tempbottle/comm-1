@@ -9,7 +9,7 @@ module Comm
     def add_message(message)
     end
 
-    def add_peer(peer)
+    def update_peers(peers)
     end
   end
 end

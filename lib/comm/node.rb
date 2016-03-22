@@ -90,7 +90,7 @@ module Comm
     def add_peer(peer)
       peers.add(peer) do
         info "-> Adding peer #{peer.inspect}"
-        client.add_peer(peer)
+        client.update_peers(peers)
         async.connect_to(peer.host, peer.port);
       end
     end

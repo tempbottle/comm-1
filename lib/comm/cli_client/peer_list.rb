@@ -2,7 +2,7 @@ module Comm
   class CliClient
     class PeerList
       def initialize(window)
-        @height = (Curses.lines - 1) / 2
+        @height = Curses.lines - 1
         @width = 42
         @top = 0
         @left = Curses.cols - 42
@@ -12,14 +12,9 @@ module Comm
         render
       end
 
-      def add(peer)
-        @peers |= [peer]
+      def update(peers)
+        @peers.replace(peers.except_self.to_a)
         @peers.sort!
-        render
-      end
-
-      def remove(peer)
-        @peers.delete(peer)
         render
       end
 
