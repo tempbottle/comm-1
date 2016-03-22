@@ -76,6 +76,7 @@ module Comm
         ))
         socket.send(introduction.encode, 0)
       end
+    rescue Errno::ECONNREFUSED, Errno::ETIMEDOUT
     end
 
     def broadcast(message)

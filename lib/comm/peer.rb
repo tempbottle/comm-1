@@ -28,7 +28,7 @@ module Comm
       TCPSocket.open(host, port) do |socket|
         socket.send(message, 0)
       end
-    rescue Errno::ECONNREFUSED
+    rescue Errno::ECONNREFUSED, Errno::ETIMEDOUT
     end
 
     def serialize
