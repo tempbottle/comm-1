@@ -16,6 +16,7 @@ module Comm
       @peer_announcer = PeerAnnouncer.new(@peers)
       @message_relay = MessageRelay.new(self)
       @messages = MessageRegistry.new
+      @stopped = false
 
       Celluloid.logger = logger || ::Logger.new("comm-#{address.to_s}.log")
     end
@@ -36,10 +37,10 @@ module Comm
 
     def stop
       info 'Stopping node'
-      message_relay.async.stop
-      peer_announcer.async.stop
-      message_relay.terminate
-      peer_announcer.terminate
+      @stopped = true
+      @server.close
+      message_relay.stop
+      peer_announcer.stop
     end
 
     def deliver_chat(text, to: recipient)
@@ -59,6 +60,8 @@ module Comm
     def accept_connections
       info "-> Accepting connections as #{@address}"
       loop { async.handle_connection(@server.accept) }
+    rescue IOError
+      info "Server closed"
     end
 
     def connect_to(host, port)
@@ -88,6 +91,7 @@ module Comm
     attr_reader :client, :peer_announcer, :peers, :message_relay, :messages
 
     def add_peer(peer)
+      return if @stopped
       peers.add(peer) do
         info "-> Adding peer #{peer.inspect}"
         client.update_peers(peers)
@@ -96,8 +100,9 @@ module Comm
     end
 
     def handle_connection(socket)
-      message = Messages.decode_from(socket.to_io).unwrap
+      return if @stopped
 
+      message = Messages.decode_from(socket.to_io).unwrap
       case message
       when Messages::Peers
         message.peers.each do |announcement|
@@ -105,7 +110,7 @@ module Comm
             address: Address.new(announcement.address),
             host: announcement.host,
             port: announcement.port)
-          async.add_peer(peer)
+          add_peer(peer)
         end
       when Messages::Chat
         if Address.new(message.recipient) == address
