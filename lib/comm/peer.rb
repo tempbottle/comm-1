@@ -12,10 +12,6 @@ module Comm
       [self.class, address].hash
     end
 
-    def eql?(other)
-      self == other
-    end
-
     def ==(other)
       self.address == other.address
     end
@@ -40,6 +36,12 @@ module Comm
         address: address.to_s,
         host: host,
         port: port)
+    end
+
+    protected
+
+    def eql?(other)
+      self == other
     end
   end
 end
