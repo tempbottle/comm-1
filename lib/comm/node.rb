@@ -12,7 +12,7 @@ module Comm
 
       @client = NullClient.new
       @server = TCPServer.new(host, port)
-      @peers = PeerPool.new(self, size: 3)
+      @peers = PeerPool.new(self)
       @peer_announcer = PeerAnnouncer.new(@peers)
       @message_relay = MessageRelay.new(self)
       @messages = MessageRegistry.new
