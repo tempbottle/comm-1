@@ -4,7 +4,7 @@ require 'forwardable'
 module Comm
   class PeerPool
     extend Forwardable
-    def_delegators :peers, :each, :empty?, :map
+    def_delegators :peers, :each, :empty?, :map, :to_a
 
     def initialize(node, peers: Set.new([node.self_peer]), size: 2)
       @node = node
