@@ -3,12 +3,13 @@ module Comm
     include Celluloid::IO
     include Celluloid::Internals::Logger
 
-    attr_reader :address
+    attr_reader :address, :logger, :degree
 
-    def initialize(host, port, key:, logger: nil)
+    def initialize(host, port, key:, logger: nil, degree: 1)
       @address = Address.for_content(key.public_key.export)
       @host = host
       @port = port
+      @degree = degree
 
       @client = NullClient.new
       @server = TCPServer.new(host, port)
