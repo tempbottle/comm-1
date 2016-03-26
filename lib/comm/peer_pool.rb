@@ -4,6 +4,7 @@ require 'forwardable'
 module Comm
   class PeerPool
     extend Forwardable
+    include Enumerable
 
     ADDRESS_LENGTH = 40
 
@@ -21,6 +22,7 @@ module Comm
     end
 
     def each(&block)
+      yield @self_peer
       @buckets.each { |bucket| bucket.each(&block) }
     end
 

@@ -5,7 +5,7 @@ module Comm
 
     attr_reader :address, :logger, :degree
 
-    def initialize(host, port, key:, logger: nil, degree: 1)
+    def initialize(host, port, key:, logger: nil, degree: 10)
       @address = Address.for_content(key.public_key.export)
       @host = host
       @port = port
@@ -14,12 +14,11 @@ module Comm
       @client = NullClient.new
       @server = TCPServer.new(host, port)
       @peers = PeerPool.new(self)
-      @peer_announcer = PeerAnnouncer.new(@peers)
       @message_relay = MessageRelay.new(self)
       @messages = MessageRegistry.new
       @stopped = false
 
-      Celluloid.logger = logger || ::Logger.new("comm-#{address.to_s}.log")
+      @logger = Celluloid.logger = logger || ::Logger.new("comm-#{address.to_s}.log")
     end
 
     def attach_client(client)
@@ -32,7 +31,6 @@ module Comm
 
     def run
       async.accept_connections
-      peer_announcer.async.run
       message_relay.async.run
     end
 
@@ -41,7 +39,6 @@ module Comm
       @stopped = true
       @server.close
       message_relay.stop
-      peer_announcer.stop
     end
 
     def deliver_chat(text, to: recipient)
@@ -68,14 +65,13 @@ module Comm
     def connect_to(host, port)
       info "-> Trying to connect to #{host}:#{port}"
       TCPSocket.open(host, port) do |socket|
-        introduction = Messages.encode(Messages::Peers.new(
-          peers: [Messages::Peer.new(
+        find_peer = Messages.encode(Messages::FindPeer.new(
+          requester: Messages::Peer.new(
             address: @address.to_s,
             host: @host,
-            port: @port
-          )]
-        ))
-        socket.send(introduction.encode, 0)
+            port: @port),
+          address: @address.to_s))
+        socket.send(find_peer, 0)
       end
     rescue Errno::ECONNREFUSED, Errno::ETIMEDOUT
     end
@@ -90,14 +86,14 @@ module Comm
 
     private
 
-    attr_reader :client, :peer_announcer, :peers, :message_relay, :messages
+    attr_reader :client, :peers, :message_relay, :messages
 
     def add_peer(peer)
       return if @stopped
       peers.add(peer) do
         info "-> Adding peer #{peer.inspect}"
         client.update_peers(peers)
-        async.connect_to(peer.host, peer.port);
+        #async.connect_to(peer.host, peer.port);
       end
     end
 
@@ -114,6 +110,16 @@ module Comm
             port: announcement.port)
           add_peer(peer)
         end
+      when Messages::FindPeer
+        requester = message.requester
+        requester = Peer.new(
+          address: Address.new(requester.address),
+          host: requester.host,
+          port: requester.port)
+        nearest = peers.nearest_to(message.address).take(degree).map(&:serialize)
+        nearest = Messages.encode(Messages::Peers.new(peers: nearest))
+        add_peer(requester)
+        requester.send(nearest)
       when Messages::Chat
         if Address.new(message.recipient) == address
           messages.add(message) do

@@ -32,22 +32,30 @@ module Comm
       required :int32, :port, 3
     end
 
+    class FindPeer < Protobuf::Message
+      required Peer, :requester, 1
+      required :string, :address, 2
+    end
+
     class Peers < Protobuf::Message
       repeated Peer, :peers, 1
     end
 
     class Message < Protobuf::Message
       optional Messages::Chat, :chat, 1
-      optional Messages::Peers, :peers, 2
+      optional Messages::FindPeer, :find_peer, 2
+      optional Messages::Peers, :peers, 3
 
       def unwrap
-        chat or peers
+        chat or find_peer or peers
       end
 
       def self.wrap(message)
         case message
         when Chat
           Message.new(chat: message)
+        when FindPeer
+          Message.new(find_peer: message)
         when Peers
           Message.new(peers: message)
         end
