@@ -1,0 +1,32 @@
+#!/usr/bin/env ruby
+
+require 'bundler/setup'
+require 'comm'
+
+start = Integer(ARGV[0])
+count = Integer(ARGV[1])
+@threads = []
+
+@stopped = false
+count.times do |n|
+  @threads << Thread.new do
+    key = OpenSSL::PKey::RSA.generate(4096)
+    puts "Starting #{Process.pid}: 0.0.0.0:#{start + n + 1}"
+    node = Comm::Node.new('0.0.0.0', start + n + 1, key: key)
+    node.async.run
+    node.async.connect_to('localhost', start + n)
+
+    sleep 0 until @stopped
+
+    puts "Stopping #{Process.pid}"
+    node.stop
+    puts "Stopped"
+  end
+  sleep 2
+end
+
+Signal.trap(:INT) do
+  @stopped = true
+end
+
+@threads.each(&:join)
