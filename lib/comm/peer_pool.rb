@@ -62,6 +62,15 @@ module Comm
       @buckets.flat_map(&:to_a)
     end
 
+    def dump_dot
+      File.open("#{@node.address.to_s}.dot", 'w') do |file|
+        except_self.each do |peer|
+          file.write(%{"#{@node.address.to_s}" -> "#{peer.address.to_s}"\n})
+        end
+        file.flush
+      end
+    end
+
     private
 
     attr_reader :peers

@@ -39,6 +39,7 @@ module Comm
       @stopped = true
       @server.close
       message_relay.stop
+      @peers.dump_dot
     end
 
     def deliver_chat(text, to: recipient)
