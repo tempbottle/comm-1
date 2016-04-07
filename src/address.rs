@@ -2,6 +2,7 @@ use crypto::digest::Digest;
 use crypto::sha1::Sha1;
 use std::iter::repeat;
 
+#[derive(Debug,Eq,PartialEq)]
 struct Address {
     data: [u8; 20]
 }
@@ -49,5 +50,19 @@ mod tests {
     fn test_from_str() {
         let address = Address::from_str("8b45e4bd1c6acb88bebf6407d16205f567e62a3e");
         assert_eq!(address.to_str(), "8b45e4bd1c6acb88bebf6407d16205f567e62a3e");
+    }
+
+    #[test]
+    fn test_equal() {
+        let a = Address::from_str("8b45e4bd1c6acb88bebf6407d16205f567e62a3e");
+        let b = Address::from_str("8b45e4bd1c6acb88bebf6407d16205f567e62a3e");
+        assert_eq!(a, b);
+    }
+
+    #[test]
+    fn test_not_equal() {
+        let a = Address::from_str("8b45e4bd1c6acb88bebf6407d16205f567e62a3e");
+        let b = Address::from_str("8b45e4bd1c6acb88bebf6407d16205f567e62a3f");
+        assert!(a != b);
     }
 }
