@@ -2,7 +2,7 @@ use crypto::digest::Digest;
 use crypto::sha1::Sha1;
 use std::iter::repeat;
 
-#[derive(Debug,Eq,PartialEq)]
+#[derive(Clone,Copy,Debug,Eq,Hash,PartialEq)]
 struct Address {
     data: [u8; 20]
 }
