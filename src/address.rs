@@ -3,6 +3,8 @@ use crypto::sha1::Sha1;
 use std::iter::repeat;
 use num;
 
+pub const LENGTH: usize = 160;
+
 #[derive(Clone,Copy,Debug,Eq,Hash,PartialEq)]
 pub struct Address {
     data: [u8; 20]
@@ -39,6 +41,10 @@ impl Address {
         use rustc_serialize::hex::ToHex;
         self.data.to_hex()
     }
+}
+
+pub trait Addressable {
+    fn address(&self) -> Address;
 }
 
 #[cfg(test)]
