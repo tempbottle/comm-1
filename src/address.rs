@@ -1,6 +1,7 @@
 use crypto::digest::Digest;
 use crypto::sha1::Sha1;
 use std::iter::repeat;
+use num;
 
 #[derive(Clone,Copy,Debug,Eq,Hash,PartialEq)]
 pub struct Address {
@@ -30,6 +31,10 @@ impl Address {
         }
     }
 
+    pub fn as_numeric(&self) -> num::BigUint {
+        num::BigUint::from_bytes_be(&self.data)
+    }
+
     pub fn to_str(&self) -> String {
         use rustc_serialize::hex::ToHex;
         self.data.to_hex()
@@ -50,6 +55,16 @@ mod tests {
     fn test_from_str() {
         let address = Address::from_str("8b45e4bd1c6acb88bebf6407d16205f567e62a3e");
         assert_eq!(address.to_str(), "8b45e4bd1c6acb88bebf6407d16205f567e62a3e");
+    }
+
+    #[test]
+    fn test_as_numeric() {
+        use num::bigint::ToBigUint;
+
+        let address = Address::from_str("000000000000000000000000000000000000000f");
+        assert_eq!(address.as_numeric(), 15u8.to_biguint().unwrap());
+        let address = Address::from_str("00000000000000000000000000000000000000f0");
+        assert_eq!(address.as_numeric(), 240u8.to_biguint().unwrap());
     }
 
     #[test]
