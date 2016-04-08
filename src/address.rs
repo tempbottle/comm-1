@@ -3,7 +3,7 @@ use crypto::sha1::Sha1;
 use std::iter::repeat;
 
 #[derive(Clone,Copy,Debug,Eq,Hash,PartialEq)]
-struct Address {
+pub struct Address {
     data: [u8; 20]
 }
 
