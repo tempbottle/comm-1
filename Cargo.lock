@@ -5,6 +5,7 @@ dependencies = [
  "num 0.1.31 (registry+https://github.com/rust-lang/crates.io-index)",
  "rust-crypto 0.2.35 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.19 (registry+https://github.com/rust-lang/crates.io-index)",
+ "time 0.1.35 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
