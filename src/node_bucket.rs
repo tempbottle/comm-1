@@ -5,20 +5,20 @@ use num;
 
 struct NodeBucket<A: Addressable> {
     k: usize,
-    min_exp: usize,
-    max_exp: usize,
+    min: BigUint,
+    max: BigUint,
     addresses: Vec<Address>,
     nodes: HashMap<Address, A>
 }
 
 impl<A: Addressable> NodeBucket<A> {
     pub fn new(k: usize) -> NodeBucket<A> {
-        let min_exp = 0;
-        let max_exp = LENGTH;
+        let min = 0.to_biguint().unwrap();
+        let max = num::pow(2.to_biguint().unwrap(), LENGTH);
         NodeBucket {
             k: k,
-            min_exp: min_exp,
-            max_exp: max_exp,
+            min: min,
+            max: max,
             addresses: Vec::with_capacity(k),
             nodes: HashMap::with_capacity(k)
         }
@@ -30,15 +30,7 @@ impl<A: Addressable> NodeBucket<A> {
 
     pub fn covers(&self, address: &Address) -> bool {
         let numeric = address.as_numeric();
-        numeric >= self.min() && numeric <= self.max()
-    }
-
-    fn max(&self) -> num::BigUint {
-        num::pow(2u8.to_biguint().unwrap(), self.max_exp) - 1.to_biguint().unwrap()
-    }
-
-    fn min(&self) -> num::BigUint {
-        num::pow(2.to_biguint().unwrap(), self.min_exp) - 1.to_biguint().unwrap()
+        self.min <= numeric && numeric < self.max
     }
 
     pub fn insert(&mut self, node: A) {
@@ -58,7 +50,7 @@ impl<A: Addressable> NodeBucket<A> {
     }
 
     pub fn split(&mut self) -> (Self, Self) {
-        let partition = num::pow(2.to_biguint().unwrap(), self.max_exp - 1);
+        let partition = self.max.clone() / 2.to_biguint().unwrap();
         let addresses = self.addresses.clone();
         let (a_addresses, b_addresses): (Vec<Address>, Vec<Address>) = addresses
             .into_iter()
@@ -75,15 +67,15 @@ impl<A: Addressable> NodeBucket<A> {
 
         let a = NodeBucket {
             k: self.k,
-            min_exp: 0,
-            max_exp: self.max_exp - 1,
+            min: self.min.clone(),
+            max: partition.clone(),
             addresses: a_addresses,
             nodes: a_nodes
         };
         let b = NodeBucket {
             k: self.k,
-            min_exp: self.max_exp - 1,
-            max_exp: LENGTH,
+            min: partition.clone(),
+            max: self.max.clone(),
             addresses: b_addresses,
             nodes: b_nodes
         };
@@ -174,19 +166,37 @@ mod tests {
 
     #[test]
     fn test_split() {
-        let mut bucket: NodeBucket<Node> = NodeBucket::new(2);
+        let mut bucket: NodeBucket<Node> = NodeBucket::new(4);
         let node_1 = Node::new(Address::from_str("0000000000000000000000000000000000000000"));
-        let node_2 = Node::new(Address::from_str("ffffffffffffffffffffffffffffffffffffffff"));
+        let node_2 = Node::new(Address::from_str("7fffffffffffffffffffffffffffffffffffffff"));
+        let node_3 = Node::new(Address::from_str("8000000000000000000000000000000000000000"));
+        let node_4 = Node::new(Address::from_str("ffffffffffffffffffffffffffffffffffffffff"));
+
         bucket.insert(node_1);
         bucket.insert(node_2);
+        bucket.insert(node_3);
+        bucket.insert(node_4);
+
         let (a, b) = bucket.split();
-        assert_eq!(a.addresses.len(), 1);
-        assert_eq!(b.addresses.len(), 1);
+
+        // Splits up known address
+        assert_eq!(a.addresses.len(), 2);
+        assert_eq!(b.addresses.len(), 2);
+
+        // Splits up known nodes
         assert_eq!(a.nodes[&Address::from_str("0000000000000000000000000000000000000000")], node_1);
-        assert_eq!(b.nodes[&Address::from_str("ffffffffffffffffffffffffffffffffffffffff")], node_2);
+        assert_eq!(a.nodes[&Address::from_str("7fffffffffffffffffffffffffffffffffffffff")], node_2);
+        assert_eq!(b.nodes[&Address::from_str("8000000000000000000000000000000000000000")], node_3);
+        assert_eq!(b.nodes[&Address::from_str("ffffffffffffffffffffffffffffffffffffffff")], node_4);
+
+        // Equitably covers address space
         assert!(a.covers(&Address::from_str("0000000000000000000000000000000000000000")));
-        assert!(!a.covers(&Address::from_str("ffffffffffffffffffffffffffffffffffffffff")));
         assert!(!b.covers(&Address::from_str("0000000000000000000000000000000000000000")));
+        assert!(a.covers(&Address::from_str("7fffffffffffffffffffffffffffffffffffffff")));
+        assert!(!b.covers(&Address::from_str("7fffffffffffffffffffffffffffffffffffffff")));
+        assert!(!a.covers(&Address::from_str("8000000000000000000000000000000000000000")));
+        assert!(b.covers(&Address::from_str("8000000000000000000000000000000000000000")));
+        assert!(!a.covers(&Address::from_str("ffffffffffffffffffffffffffffffffffffffff")));
         assert!(b.covers(&Address::from_str("ffffffffffffffffffffffffffffffffffffffff")));
     }
 }
