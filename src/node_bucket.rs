@@ -157,7 +157,7 @@ mod tests {
 
     #[test]
     fn test_covers() {
-        let mut bucket: NodeBucket<Node> = NodeBucket::new(8);
+        let bucket: NodeBucket<Node> = NodeBucket::new(8);
         let address_1 = Address::from_str("0000000000000000000000000000000000000000");
         let address_2 = Address::from_str("ffffffffffffffffffffffffffffffffffffffff");
         assert!(bucket.covers(&address_1));
