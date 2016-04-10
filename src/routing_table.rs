@@ -41,7 +41,8 @@ impl<A: Addressable> RoutingTable<A> {
         if split {
             let mut bucket = self.buckets.remove(index);
             let (a, b) = bucket.split();
-            self.buckets.extend(vec![a, b]);
+            self.buckets.insert(index, a);
+            self.buckets.insert(index + 1, b);
             self.bucket_for(address, func);
         } else {
             let ref mut bucket = self.buckets.get_mut(index).unwrap();
