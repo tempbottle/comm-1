@@ -1,6 +1,5 @@
 use crypto::digest::Digest;
 use crypto::sha1::Sha1;
-use std::iter::repeat;
 use num;
 
 pub const LENGTH: usize = 160;
