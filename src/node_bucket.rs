@@ -3,7 +3,7 @@ use num::bigint::{BigUint, ToBigUint};
 use std::collections::HashMap;
 use num;
 
-struct NodeBucket<A: Addressable> {
+pub struct NodeBucket<A: Addressable> {
     k: usize,
     min: BigUint,
     max: BigUint,
