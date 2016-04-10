@@ -28,8 +28,8 @@ impl<A: Addressable> RoutingTable<A> {
         let buckets_maxed = self.buckets_maxed();
         let self_address = self.self_address;
         {
-            let (idx, mut bucket) = self.buckets
-                .iter_mut()
+            let (idx, bucket) = self.buckets
+                .iter()
                 .enumerate()
                 .find(|&(_, ref b)| b.covers(address))
                 .unwrap();
