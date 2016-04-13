@@ -1,6 +1,7 @@
 use address::{LENGTH, Address, Addressable};
 use num::bigint::{BigUint, ToBigUint};
 use std::collections::HashMap;
+use std::collections::hash_map::Values;
 use num;
 
 pub struct NodeBucket<A: Addressable> {
@@ -31,6 +32,10 @@ impl<A: Addressable> NodeBucket<A> {
     pub fn covers(&self, address: &Address) -> bool {
         let numeric = address.as_numeric();
         self.min <= numeric && numeric < self.max
+    }
+
+    pub fn get_nodes(&mut self) -> Vec<&mut A> {
+        self.nodes.iter_mut().map(|(_, node)| node).collect()
     }
 
     pub fn insert(&mut self, node: A) {

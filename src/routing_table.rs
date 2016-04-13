@@ -2,6 +2,7 @@ use node_bucket::NodeBucket;
 use address::{Address, Addressable, LENGTH};
 
 pub struct RoutingTable<A: Addressable> {
+    k: usize,
     self_address: Address,
     buckets: Vec<NodeBucket<A>>
 }
@@ -10,6 +11,7 @@ impl<A: Addressable> RoutingTable<A> {
     pub fn new(k: usize, self_address: Address) -> RoutingTable<A> {
         let bucket = NodeBucket::new(k);
         RoutingTable {
+            k: k,
             self_address: self_address,
             buckets: vec![bucket]
         }
@@ -29,6 +31,19 @@ impl<A: Addressable> RoutingTable<A> {
             bucket.insert(node);
             self.buckets.insert(index, bucket);
         }
+    }
+
+    pub fn nearest_to(&mut self, address: &Address) -> Vec<&mut A> {
+        // TODO: this should walk buckets much more efficiently
+
+        let mut candidates: Vec<&mut A> = self.buckets
+            .iter_mut()
+            .flat_map(|b| b.get_nodes())
+            .collect();
+
+        candidates.sort_by_key(|n| n.address().distance_from(address));
+
+        candidates.into_iter().take(self.k).collect()
     }
 
     fn bucket_for(&mut self, address: &Address) -> usize {
@@ -93,5 +108,29 @@ mod tests {
         table.insert(TestNode::new(Address::from_str("fffffffffffffffffffffffffffffffffffffffc")));
         table.insert(TestNode::new(Address::from_str("fffffffffffffffffffffffffffffffffffffffb")));
         assert_eq!(table.buckets.len(), 3);
+    }
+
+    #[test]
+    fn test_nearest_to() {
+        let self_node = Address::from_str("0000000000000000000000000000000000000000");
+        let mut table: RoutingTable<TestNode> = RoutingTable::new(2, self_node);
+        let node_1 = TestNode::new(Address::from_str("0000000000000000000000000000000000000001"));
+        let node_2 = TestNode::new(Address::from_str("7ffffffffffffffffffffffffffffffffffffffe"));
+        let node_3 = TestNode::new(Address::from_str("ffffffffffffffffffffffffffffffffffffffff"));
+        table.insert(node_1);
+        table.insert(node_2);
+        table.insert(node_3);
+
+        {
+            let nearest = table.nearest_to(&Address::from_str("fffffffffffffffffffffffffffffffffffffffd"));
+            assert_eq!(*nearest[0], node_3);
+            assert_eq!(*nearest[1], node_2);
+        }
+
+        {
+            let nearest = table.nearest_to(&Address::from_str("0000000000000000000000000000000000000002"));
+            assert_eq!(*nearest[0], node_1);
+            assert_eq!(*nearest[1], node_2);
+        }
     }
 }

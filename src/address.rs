@@ -36,6 +36,11 @@ impl Address {
         num::BigUint::from_bytes_be(&self.data)
     }
 
+    pub fn distance_from(&self, other: &Self) -> num::BigUint {
+        use std::ops::BitXor;
+        self.as_numeric().bitxor(other.as_numeric())
+    }
+
     pub fn to_str(&self) -> String {
         use rustc_serialize::hex::ToHex;
         self.data.to_hex()
