@@ -26,7 +26,7 @@ impl<A: ToSocketAddrs> Node<A> for UdpNode<A> {
 
 #[cfg(test)]
 mod tests {
-    use super::{Node,UdpNode};
+    use super::{Node, UdpNode};
 
     #[test]
     fn test_update() {
