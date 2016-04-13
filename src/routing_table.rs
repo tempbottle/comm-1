@@ -16,38 +16,28 @@ impl<A: Addressable> RoutingTable<A> {
     }
 
     pub fn insert(&mut self, node: A) {
-        self.bucket_for(&node.address(), {move |bucket|
-            bucket.insert(node)
-        });
-    }
-
-    fn bucket_for<F>(&mut self, address: &Address, func: F)
-        where F : FnOnce(&mut NodeBucket<A>) -> () {
-        let index: usize;
-        let split: bool;
-        let buckets_maxed = self.buckets_maxed();
+        let index = self.bucket_for(&node.address());
+        let mut bucket = self.buckets.remove(index);
         let self_address = self.self_address;
-        {
-            let (idx, bucket) = self.buckets
-                .iter()
-                .enumerate()
-                .find(|&(_, ref b)| b.covers(address))
-                .unwrap();
 
-            index = idx;
-            split = !buckets_maxed && bucket.is_full() && bucket.covers(&self_address);
-        }
-
-        if split {
-            let mut bucket = self.buckets.remove(index);
+        if !self.buckets_maxed() && bucket.is_full() && bucket.covers(&self_address) {
             let (a, b) = bucket.split();
             self.buckets.insert(index, a);
             self.buckets.insert(index + 1, b);
-            self.bucket_for(address, func);
+            self.insert(node);
         } else {
-            let ref mut bucket = self.buckets.get_mut(index).unwrap();
-            func(bucket);
+            bucket.insert(node);
+            self.buckets.insert(index, bucket);
         }
+    }
+
+    fn bucket_for(&mut self, address: &Address) -> usize {
+        let (index, _) = self.buckets
+            .iter()
+            .enumerate()
+            .find(|&(_, ref b)| b.covers(address))
+            .unwrap();
+        index
     }
 
     fn buckets_maxed(&self) -> bool {
