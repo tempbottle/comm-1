@@ -1,6 +1,7 @@
 use node_bucket::NodeBucket;
 use address::{Address, Addressable, LENGTH};
 
+#[derive(Debug)]
 pub struct RoutingTable<A: Addressable> {
     k: usize,
     self_address: Address,

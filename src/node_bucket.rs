@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::collections::hash_map::Values;
 use num;
 
+#[derive(Debug)]
 pub struct NodeBucket<A: Addressable> {
     k: usize,
     min: BigUint,
