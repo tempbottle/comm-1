@@ -48,7 +48,7 @@ impl Address {
 }
 
 pub trait Addressable {
-    fn address(&self) -> Address;
+    fn get_address(&self) -> Address;
 }
 
 #[cfg(test)]

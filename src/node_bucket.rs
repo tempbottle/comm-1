@@ -39,7 +39,7 @@ impl<A: Addressable> NodeBucket<A> {
     }
 
     pub fn insert(&mut self, node: A) {
-        let address = node.address();
+        let address = node.get_address();
         if let Some(pos) = self.addresses.iter().position(|&a| a == address) {
             self.addresses.remove(pos);
             self.addresses.insert(0, address);
@@ -105,7 +105,7 @@ mod tests {
     }
 
     impl Addressable for Node {
-        fn address(&self) -> Address {
+        fn get_address(&self) -> Address {
             self.address
         }
     }

@@ -18,7 +18,7 @@ impl<A: Addressable> RoutingTable<A> {
     }
 
     pub fn insert(&mut self, node: A) {
-        let index = self.bucket_for(&node.address());
+        let index = self.bucket_for(&node.get_address());
         let mut bucket = self.buckets.remove(index);
         let self_address = self.self_address;
 
@@ -41,7 +41,7 @@ impl<A: Addressable> RoutingTable<A> {
             .flat_map(|b| b.get_nodes())
             .collect();
 
-        candidates.sort_by_key(|n| n.address().distance_from(address));
+        candidates.sort_by_key(|n| n.get_address().distance_from(address));
 
         candidates.into_iter().take(self.k).collect()
     }
@@ -77,7 +77,7 @@ mod tests {
     }
 
     impl Addressable for TestNode {
-        fn address(&self) -> Address {
+        fn get_address(&self) -> Address {
             self.address
         }
     }
