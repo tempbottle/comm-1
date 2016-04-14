@@ -1,7 +1,6 @@
 use address::{LENGTH, Address, Addressable};
 use num::bigint::{BigUint, ToBigUint};
 use std::collections::HashMap;
-use std::collections::hash_map::Values;
 use num;
 
 #[derive(Debug)]
