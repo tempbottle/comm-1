@@ -1,0 +1,25 @@
+message Node {
+    required string id = 1;
+    required bytes ip_address = 2;
+    required uint32 port = 3;
+}
+
+message FindNodeQuery {
+    required Node origin = 1;  // Querying node
+    required string target = 2;
+}
+
+message FindNodeResponse {
+    required Node origin = 1; // Responding node
+    repeated Node nodes = 2;
+}
+
+message Envelope {
+    enum Type {
+        FIND_NODE_QUERY = 1;
+        FIND_NODE_RESPONSE = 2;
+    }
+    required Type message_type = 1;
+    optional FindNodeQuery find_node_query = 2;
+    optional FindNodeResponse find_node_response = 3;
+}
