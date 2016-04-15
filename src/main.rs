@@ -5,7 +5,7 @@ extern crate time;
 extern crate protobuf;
 
 use address::Address;
-use node::{Node, Serialization};
+use node::{Node, Deserialize, Serialize};
 use std::env;
 use std::net::{SocketAddrV4, Ipv4Addr, UdpSocket};
 use std::sync::mpsc::{channel, Receiver};

@@ -4,6 +4,14 @@ use protobuf::Message;
 use std::net::{SocketAddr, ToSocketAddrs, UdpSocket, Ipv4Addr};
 use time;
 
+pub trait Serialize {
+    fn serialize(&self) -> messages::Node;
+}
+
+pub trait Deserialize {
+    fn deserialize(message: &messages::Node) -> Self;
+}
+
 #[derive(Debug)]
 pub struct UdpNode {
     address: Address,
@@ -44,12 +52,7 @@ impl Node for UdpNode {
     }
 }
 
-pub trait Serialization {
-    fn deserialize(message: &messages::Node) -> Self;
-    fn serialize(&self) -> messages::Node;
-}
-
-impl Serialization for UdpNode {
+impl Deserialize for UdpNode {
     fn deserialize(message: &messages::Node) -> UdpNode {
         let ip = message.get_ip_address();
         let ip = Ipv4Addr::new(ip[0], ip[1], ip[2], ip[3]);
@@ -57,7 +60,9 @@ impl Serialization for UdpNode {
         let address = Address::from_str(message.get_id());
         Self::new(address, (ip, port))
     }
+}
 
+impl Serialize for UdpNode {
     fn serialize(&self) -> messages::Node {
         let mut message = messages::Node::new();
         message.set_id(self.address.to_str());
