@@ -8,7 +8,7 @@ use address::Address;
 use node::{Node, Deserialize, Serialize};
 use std::env;
 use std::net::{SocketAddrV4, Ipv4Addr, UdpSocket};
-use std::sync::mpsc::{channel, Receiver};
+use std::sync::mpsc;
 use std::thread;
 use protobuf::{MessageStatic, Message};
 
@@ -18,23 +18,22 @@ mod node;
 mod node_bucket;
 mod routing_table;
 
-struct Server {
+struct UdpServer {
     port: u16
 }
 
-impl Server {
-    pub fn new(port: u16) -> Server {
-        Server {
+impl UdpServer {
+    pub fn new(port: u16) -> UdpServer {
+        UdpServer {
             port: port
         }
     }
 
-    pub fn start(&self) -> Receiver<(usize, [u8; 4096])> {
+    pub fn start(&self, tx: mpsc::Sender<(usize, [u8; 4096])>) {
         let ip = Ipv4Addr::new(0, 0, 0, 0);
         let address = SocketAddrV4::new(ip, self.port);
         println!("Listening at {}", address);
         let socket = UdpSocket::bind(address).unwrap();
-        let (tx, rx) = channel();
         thread::spawn(move || {
             loop {
                 let mut buf = [0; 4096];
@@ -44,7 +43,6 @@ impl Server {
                 }
             }
         });
-        rx
     }
 }
 
@@ -54,7 +52,8 @@ fn main() {
     let address = Address::for_content(secret.as_str());
     let port = args[2].clone().parse::<u16>().unwrap();
 
-    let messages = Server::new(port).start();
+    let (tx, messages) = mpsc::channel();
+    UdpServer::new(port).start(tx);
 
     let mut my_origin = messages::Node::new();
     my_origin.set_id(address.to_str());
