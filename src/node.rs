@@ -18,6 +18,12 @@ pub trait Node : Addressable + Debug + Serialize {
     fn send<M: Message>(&self, message: M) where Self : Sized;
 }
 
+impl PartialEq for Node {
+    fn eq(&self, other: &Self) -> bool {
+        self.get_address() == other.get_address()
+    }
+}
+
 #[derive(Debug)]
 pub struct UdpNode {
     address: Address,

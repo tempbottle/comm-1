@@ -1,19 +1,20 @@
 use address::{LENGTH, Address, Addressable};
+use node::Node;
 use num::bigint::{BigUint, ToBigUint};
 use std::collections::HashMap;
 use num;
 
 #[derive(Debug)]
-pub struct NodeBucket<A: Addressable> {
+pub struct NodeBucket {
     k: usize,
     min: BigUint,
     max: BigUint,
     addresses: Vec<Address>,
-    nodes: HashMap<Address, A>
+    nodes: HashMap<Address, Box<Node>>
 }
 
-impl<A: Addressable> NodeBucket<A> {
-    pub fn new(k: usize) -> NodeBucket<A> {
+impl NodeBucket {
+    pub fn new(k: usize) -> NodeBucket {
         let min = 0.to_biguint().unwrap();
         let max = num::pow(2.to_biguint().unwrap(), LENGTH);
         NodeBucket {
@@ -34,12 +35,13 @@ impl<A: Addressable> NodeBucket<A> {
         self.min <= numeric && numeric < self.max
     }
 
-    pub fn get_nodes(&mut self) -> Vec<&mut A> {
-        self.nodes.iter_mut().map(|(_, node)| node).collect()
+    pub fn get_nodes(&self) -> Vec<&Box<Node>> {
+        self.nodes.iter().map(|(_, node)| node).collect()
     }
 
-    pub fn insert(&mut self, node: A) {
+    pub fn insert<N: Node + 'static>(&mut self, node: N) {
         let address = node.get_address();
+        let node = Box::new(node);
         if let Some(pos) = self.addresses.iter().position(|&a| a == address) {
             self.addresses.remove(pos);
             self.addresses.insert(0, address);
@@ -91,78 +93,92 @@ impl<A: Addressable> NodeBucket<A> {
 #[cfg(test)]
 mod tests {
     use address::{Address, Addressable};
+    use node::{Node, Serialize};
+    use protobuf::Message;
+    use messages;
     use super::NodeBucket;
 
-    #[derive(Clone,Copy,Debug,PartialEq,Eq)]
-    struct Node {
+    #[derive(Debug,Clone,Copy)]
+    struct TestNode {
         pub address: Address
     }
 
-    impl Node {
-        fn new(address: Address) -> Node {
-            Node { address: address }
+    impl TestNode {
+        fn new(address: Address) -> TestNode {
+            TestNode { address: address }
         }
     }
 
-    impl Addressable for Node {
+    impl Addressable for TestNode {
         fn get_address(&self) -> Address {
             self.address
         }
     }
 
+    impl Node for TestNode {
+        fn update(&mut self) { }
+        fn send<M: Message>(&self, _: M) { }
+    }
+
+    impl Serialize for TestNode {
+        fn serialize(&self) -> messages::Node {
+            messages::Node::new()
+        }
+    }
+
     #[test]
     fn test_insert() {
-        let mut bucket: NodeBucket<Node> = NodeBucket::new(8);
-        let node = Node::new(Address::for_content("some string"));
+        let mut bucket: NodeBucket = NodeBucket::new(8);
+        let node = TestNode::new(Address::for_content("some string"));
         bucket.insert(node);
         assert_eq!(bucket.addresses.len(), 1);
     }
 
     #[test]
     fn test_insert_duplicate() {
-        let mut bucket: NodeBucket<Node> = NodeBucket::new(8);
-        let a = Node::new(Address::for_content("node 1"));
-        let b = Node::new(Address::for_content("node 2"));
-        let c = Node::new(Address::for_content("node 1"));
+        let mut bucket: NodeBucket = NodeBucket::new(8);
+        let a = TestNode::new(Address::for_content("node 1"));
+        let b = TestNode::new(Address::for_content("node 2"));
+        let c = TestNode::new(Address::for_content("node 1"));
 
         bucket.insert(a.clone());
         bucket.insert(b);
         bucket.insert(c);
 
         assert_eq!(bucket.addresses.len(), 2);
-        assert_eq!(bucket.nodes[&Address::for_content("node 1")], a);
+        assert_eq!(bucket.nodes[&Address::for_content("node 1")].get_address(), a.get_address());
     }
 
     #[test]
     fn test_insert_full() {
-        let mut bucket: NodeBucket<Node> = NodeBucket::new(2);
-        bucket.insert(Node::new(Address::for_content("node 1")));
-        bucket.insert(Node::new(Address::for_content("node 2")));
-        bucket.insert(Node::new(Address::for_content("node 3")));
+        let mut bucket: NodeBucket = NodeBucket::new(2);
+        bucket.insert(TestNode::new(Address::for_content("node 1")));
+        bucket.insert(TestNode::new(Address::for_content("node 2")));
+        bucket.insert(TestNode::new(Address::for_content("node 3")));
         assert_eq!(bucket.addresses.len(), 2);
         assert_eq!(bucket.nodes.get(&Address::for_content("node 3")), None);
     }
 
     #[test]
     fn test_is_full() {
-        let mut bucket: NodeBucket<Node> = NodeBucket::new(2);
+        let mut bucket: NodeBucket = NodeBucket::new(2);
         assert!(!bucket.is_full());
 
-        bucket.insert(Node::new(Address::for_content("node 1")));
-        bucket.insert(Node::new(Address::for_content("node 2")));
+        bucket.insert(TestNode::new(Address::for_content("node 1")));
+        bucket.insert(TestNode::new(Address::for_content("node 2")));
         assert!(bucket.is_full());
     }
 
     #[test]
     fn test_contains() {
-        let mut bucket: NodeBucket<Node> = NodeBucket::new(8);
-        bucket.insert(Node::new(Address::for_content("node 1")));
+        let mut bucket: NodeBucket = NodeBucket::new(8);
+        bucket.insert(TestNode::new(Address::for_content("node 1")));
         assert!(bucket.contains(&Address::for_content("node 1")));
     }
 
     #[test]
     fn test_covers() {
-        let bucket: NodeBucket<Node> = NodeBucket::new(8);
+        let bucket: NodeBucket = NodeBucket::new(8);
         let address_1 = Address::from_str("0000000000000000000000000000000000000000");
         let address_2 = Address::from_str("ffffffffffffffffffffffffffffffffffffffff");
         assert!(bucket.covers(&address_1));
@@ -171,11 +187,11 @@ mod tests {
 
     #[test]
     fn test_split() {
-        let mut bucket: NodeBucket<Node> = NodeBucket::new(4);
-        let node_1 = Node::new(Address::from_str("0000000000000000000000000000000000000000"));
-        let node_2 = Node::new(Address::from_str("7fffffffffffffffffffffffffffffffffffffff"));
-        let node_3 = Node::new(Address::from_str("8000000000000000000000000000000000000000"));
-        let node_4 = Node::new(Address::from_str("ffffffffffffffffffffffffffffffffffffffff"));
+        let mut bucket: NodeBucket = NodeBucket::new(4);
+        let node_1 = TestNode::new(Address::from_str("0000000000000000000000000000000000000000"));
+        let node_2 = TestNode::new(Address::from_str("7fffffffffffffffffffffffffffffffffffffff"));
+        let node_3 = TestNode::new(Address::from_str("8000000000000000000000000000000000000000"));
+        let node_4 = TestNode::new(Address::from_str("ffffffffffffffffffffffffffffffffffffffff"));
 
         bucket.insert(node_1);
         bucket.insert(node_2);
@@ -189,10 +205,11 @@ mod tests {
         assert_eq!(b.addresses.len(), 2);
 
         // Splits up known nodes
-        assert_eq!(a.nodes[&Address::from_str("0000000000000000000000000000000000000000")], node_1);
-        assert_eq!(a.nodes[&Address::from_str("7fffffffffffffffffffffffffffffffffffffff")], node_2);
-        assert_eq!(b.nodes[&Address::from_str("8000000000000000000000000000000000000000")], node_3);
-        assert_eq!(b.nodes[&Address::from_str("ffffffffffffffffffffffffffffffffffffffff")], node_4);
+        assert_eq!(a.nodes[&Address::from_str("0000000000000000000000000000000000000000")].get_address(), node_1.get_address());
+        assert_eq!(a.nodes[&Address::from_str("0000000000000000000000000000000000000000")].get_address(), node_1.get_address());
+        assert_eq!(a.nodes[&Address::from_str("7fffffffffffffffffffffffffffffffffffffff")].get_address(), node_2.get_address());
+        assert_eq!(b.nodes[&Address::from_str("8000000000000000000000000000000000000000")].get_address(), node_3.get_address());
+        assert_eq!(b.nodes[&Address::from_str("ffffffffffffffffffffffffffffffffffffffff")].get_address(), node_4.get_address());
 
         // Equitably covers address space
         assert!(a.covers(&Address::from_str("0000000000000000000000000000000000000000")));

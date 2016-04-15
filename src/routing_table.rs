@@ -1,15 +1,16 @@
 use node_bucket::NodeBucket;
 use address::{Address, Addressable, LENGTH};
+use node::Node;
 
 #[derive(Debug)]
-pub struct RoutingTable<A: Addressable> {
+pub struct RoutingTable {
     k: usize,
     self_address: Address,
-    buckets: Vec<NodeBucket<A>>
+    buckets: Vec<NodeBucket>
 }
 
-impl<A: Addressable> RoutingTable<A> {
-    pub fn new(k: usize, self_address: Address) -> RoutingTable<A> {
+impl RoutingTable {
+    pub fn new(k: usize, self_address: Address) -> RoutingTable {
         let bucket = NodeBucket::new(k);
         RoutingTable {
             k: k,
@@ -18,7 +19,7 @@ impl<A: Addressable> RoutingTable<A> {
         }
     }
 
-    pub fn insert(&mut self, node: A) {
+    pub fn insert<N: Node + 'static>(&mut self, node: N) {
         let index = self.bucket_for(&node.get_address());
         let mut bucket = self.buckets.remove(index);
         let self_address = self.self_address;
@@ -34,11 +35,11 @@ impl<A: Addressable> RoutingTable<A> {
         }
     }
 
-    pub fn nearest_to(&mut self, address: &Address) -> Vec<&mut A> {
+    pub fn nearest_to(&mut self, address: &Address) -> Vec<&Box<Node>> {
         // TODO: this should walk buckets much more efficiently
 
-        let mut candidates: Vec<&mut A> = self.buckets
-            .iter_mut()
+        let mut candidates: Vec<&Box<Node>> = self.buckets
+            .iter()
             .flat_map(|b| b.get_nodes())
             .collect();
 
@@ -63,10 +64,13 @@ impl<A: Addressable> RoutingTable<A> {
 
 #[cfg(test)]
 mod tests {
-    use super::RoutingTable;
     use address::{Address, Addressable};
+    use messages;
+    use node::{Node, Serialize};
+    use protobuf::Message;
+    use super::RoutingTable;
 
-    #[derive(Clone,Copy,Debug,PartialEq,Eq)]
+    #[derive(Debug,Clone,Copy)]
     struct TestNode {
         pub address: Address
     }
@@ -83,10 +87,21 @@ mod tests {
         }
     }
 
+    impl Node for TestNode {
+        fn update(&mut self) { }
+        fn send<M: Message>(&self, _: M) { }
+    }
+
+    impl Serialize for TestNode {
+        fn serialize(&self) -> messages::Node {
+            messages::Node::new()
+        }
+    }
+
     #[test]
     fn test_insert() {
         let self_node = Address::from_str("0000000000000000000000000000000000000000");
-        let mut table: RoutingTable<TestNode> = RoutingTable::new(2, self_node);
+        let mut table: RoutingTable = RoutingTable::new(2, self_node);
         table.insert(TestNode::new(Address::from_str("0000000000000000000000000000000000000001")));
         table.insert(TestNode::new(Address::from_str("ffffffffffffffffffffffffffffffffffffffff")));
         assert_eq!(table.buckets.len(), 1);
@@ -114,7 +129,7 @@ mod tests {
     #[test]
     fn test_nearest_to() {
         let self_node = Address::from_str("0000000000000000000000000000000000000000");
-        let mut table: RoutingTable<TestNode> = RoutingTable::new(2, self_node);
+        let mut table: RoutingTable = RoutingTable::new(2, self_node);
         let node_1 = TestNode::new(Address::from_str("0000000000000000000000000000000000000001"));
         let node_2 = TestNode::new(Address::from_str("7ffffffffffffffffffffffffffffffffffffffe"));
         let node_3 = TestNode::new(Address::from_str("ffffffffffffffffffffffffffffffffffffffff"));
@@ -124,14 +139,14 @@ mod tests {
 
         {
             let nearest = table.nearest_to(&Address::from_str("fffffffffffffffffffffffffffffffffffffffd"));
-            assert_eq!(*nearest[0], node_3);
-            assert_eq!(*nearest[1], node_2);
+            assert_eq!(nearest[0].get_address(), node_3.get_address());
+            assert_eq!(nearest[1].get_address(), node_2.get_address());
         }
 
         {
             let nearest = table.nearest_to(&Address::from_str("0000000000000000000000000000000000000002"));
-            assert_eq!(*nearest[0], node_1);
-            assert_eq!(*nearest[1], node_2);
+            assert_eq!(nearest[0].get_address(), node_1.get_address());
+            assert_eq!(nearest[1].get_address(), node_2.get_address());
         }
     }
 }

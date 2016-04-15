@@ -91,7 +91,7 @@ fn main() {
                 let target = Address::from_str(find_node_query.get_target());
 
                 {
-                    let nodes: Vec<&mut node::UdpNode> = routing_table.nearest_to(&target);
+                    let nodes: Vec<&Box<node::Node>> = routing_table.nearest_to(&target);
                     println!("Nearest nodes: {:?}", nodes);
                     let nodes: Vec<messages::Node> = nodes.iter().map(|n| n.serialize()).collect();
                     let mut find_node_response = messages::FindNodeResponse::new();
