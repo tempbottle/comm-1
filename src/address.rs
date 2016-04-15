@@ -1,10 +1,11 @@
 use crypto::digest::Digest;
 use crypto::sha1::Sha1;
 use num;
+use std::fmt;
 
 pub const LENGTH: usize = 160;
 
-#[derive(Clone,Copy,Debug,Eq,Hash,PartialEq)]
+#[derive(Clone,Copy,Eq,Hash,PartialEq)]
 pub struct Address {
     data: [u8; 20]
 }
@@ -49,6 +50,12 @@ impl Address {
 
 pub trait Addressable {
     fn get_address(&self) -> Address;
+}
+
+impl fmt::Debug for Address {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Address {{ {} }}", self.to_str())
+    }
 }
 
 #[cfg(test)]
