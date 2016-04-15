@@ -2,6 +2,7 @@ use address::{Address, Addressable};
 use messages;
 use protobuf::Message;
 use std::net::{SocketAddr, ToSocketAddrs, UdpSocket, Ipv4Addr};
+use std::fmt::Debug;
 use time;
 
 pub trait Serialize {
@@ -10,6 +11,11 @@ pub trait Serialize {
 
 pub trait Deserialize {
     fn deserialize(message: &messages::Node) -> Self;
+}
+
+pub trait Node : Addressable + Debug + Serialize {
+    fn update(&mut self);
+    fn send<M: Message>(&self, message: M) where Self : Sized;
 }
 
 #[derive(Debug)]
@@ -32,12 +38,6 @@ impl UdpNode {
             last_seen: time::now_utc()
         }
     }
-}
-
-
-pub trait Node {
-    fn update(&mut self);
-    fn send<M: Message>(&self, message: M);
 }
 
 impl Node for UdpNode {
