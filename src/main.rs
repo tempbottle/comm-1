@@ -5,12 +5,10 @@ extern crate time;
 extern crate protobuf;
 
 use address::Address;
-use node::{Node, Deserialize, Serialize};
+use node::{Node, Deserialize, Serialize, UdpNode};
 use server::Server;
 use std::env;
-use std::net::UdpSocket;
 use std::sync::mpsc;
-use protobuf::{MessageStatic, Message};
 
 mod address;
 mod messages;
@@ -43,12 +41,8 @@ fn main() {
         let mut envelope = messages::Envelope::new();
         envelope.set_message_type(messages::Envelope_Type::FIND_NODE_QUERY);
         envelope.set_find_node_query(find_node_query);
-
-        let ref buf = envelope.write_to_bytes().unwrap()[..];
-
-        let bootstrap_address = ("127.0.0.1", bootstrap.clone().parse::<u16>().unwrap());
-        let socket = UdpSocket::bind("0.0.0.0:0").unwrap();
-        socket.send_to(buf, bootstrap_address).unwrap();
+        let node = UdpNode::new(Address::null(), ("127.0.0.1", bootstrap.clone().parse::<u16>().unwrap()));
+        node.send(envelope);
     }
 
     loop {

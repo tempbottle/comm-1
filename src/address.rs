@@ -33,6 +33,11 @@ impl Address {
         }
     }
 
+    pub fn null() -> Address {
+        let data = [0u8; 20];
+        Address { data: data }
+    }
+
     pub fn as_numeric(&self) -> num::BigUint {
         num::BigUint::from_bytes_be(&self.data)
     }
