@@ -1,8 +1,8 @@
 extern crate crypto;
 extern crate num;
+extern crate protobuf;
 extern crate rustc_serialize;
 extern crate time;
-extern crate protobuf;
 
 use address::Address;
 use node::{Node, Deserialize, Serialize, UdpNode};
