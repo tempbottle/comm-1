@@ -35,7 +35,7 @@ impl RoutingTable {
         }
     }
 
-    pub fn nearest_to(&mut self, address: &Address) -> Vec<&Box<Node>> {
+    pub fn nearest_to(&self, address: &Address) -> Vec<&Box<Node>> {
         // TODO: this should walk buckets much more efficiently
 
         let mut candidates: Vec<&Box<Node>> = self.buckets
@@ -48,7 +48,7 @@ impl RoutingTable {
         candidates.into_iter().take(self.k).collect()
     }
 
-    fn bucket_for(&mut self, address: &Address) -> usize {
+    fn bucket_for(&self, address: &Address) -> usize {
         let (index, _) = self.buckets
             .iter()
             .enumerate()
