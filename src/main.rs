@@ -35,13 +35,14 @@ fn main() {
 
     if let Some(bootstrap) = args.get(3) {
         println!("Bootstrapping");
+        let bootstrap_address = ("127.0.0.1", bootstrap.clone().parse::<u16>().unwrap());
         let mut find_node_query = messages::FindNodeQuery::new();
         find_node_query.set_origin(my_origin.clone());
         find_node_query.set_target(address.to_str());
         let mut envelope = messages::Envelope::new();
         envelope.set_message_type(messages::Envelope_Type::FIND_NODE_QUERY);
         envelope.set_find_node_query(find_node_query);
-        let node = UdpNode::new(Address::null(), ("127.0.0.1", bootstrap.clone().parse::<u16>().unwrap()));
+        let node = UdpNode::new(Address::null(), bootstrap_address);
         node.send(envelope);
     }
 
