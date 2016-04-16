@@ -13,7 +13,7 @@ pub trait Deserialize {
     fn deserialize(message: &messages::Node) -> Self;
 }
 
-pub trait Node : Addressable + Debug + Serialize {
+pub trait Node : Addressable + Debug + Serialize + Send + Sync {
     fn update(&mut self);
     fn send<M: Message>(&self, message: M) where Self : Sized;
 }
