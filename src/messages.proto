@@ -18,6 +18,14 @@ message FindNodeResponse {
     repeated Node nodes = 2;
 }
 
+message PingQuery {
+    required Node origin = 1;  // Querying node
+}
+
+message PingResponse {
+    required Node origin = 1; // Responding node
+}
+
 // Wrapper
 
 message Envelope {
