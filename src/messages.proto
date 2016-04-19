@@ -1,8 +1,12 @@
+// Types
+
 message Node {
     required string id = 1;
     required bytes ip_address = 2;
     required uint32 port = 3;
 }
+
+// Messages
 
 message FindNodeQuery {
     required Node origin = 1;  // Querying node
@@ -13,6 +17,8 @@ message FindNodeResponse {
     required Node origin = 1; // Responding node
     repeated Node nodes = 2;
 }
+
+// Wrapper
 
 message Envelope {
     enum Type {
