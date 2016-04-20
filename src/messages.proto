@@ -34,6 +34,9 @@ message Envelope {
         FIND_NODE_RESPONSE = 2;
     }
     required Type message_type = 1;
-    optional FindNodeQuery find_node_query = 2;
-    optional FindNodeResponse find_node_response = 3;
+    required uint32 transaction_id = 2;
+
+    // Replace these with Any type
+    optional FindNodeQuery find_node_query = 3;
+    optional FindNodeResponse find_node_response = 4;
 }

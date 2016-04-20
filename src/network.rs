@@ -7,10 +7,12 @@ use routing_table::RoutingTable;
 use std::sync::{Arc, Mutex, mpsc};
 use std::thread;
 use std::collections::HashSet;
+use transaction::TransactionIdGenerator;
 
 pub struct Handler {
     routing_table: Arc<Mutex<RoutingTable>>,
     self_node: Arc<Box<node::Node + 'static>>,
+    transaction_ids: TransactionIdGenerator
 }
 
 impl Handler {
@@ -21,6 +23,8 @@ impl Handler {
         Handler {
             routing_table: routing_table,
             self_node: Arc::new(Box::new(self_node)),
+            transaction_ids: TransactionIdGenerator::new()
+        }
     }
 
     pub fn run<N: node::Node + 'static>(
@@ -60,6 +64,7 @@ impl Handler {
                     let mut response = messages::Envelope::new();
                     response.set_message_type(messages::Envelope_Type::FIND_NODE_RESPONSE);
                     response.set_find_node_response(find_node_response);
+                    response.set_transaction_id(self.transaction_ids.generate());
 
                     origin.send(response);
                 }
@@ -80,13 +85,16 @@ impl Handler {
             }
         }
     }
+
     fn query_node_for_self<N: node::Node + 'static>(&mut self, node: &Box<N>) {
+        let transaction_id = self.transaction_ids.generate();
         let mut find_node_query = messages::FindNodeQuery::new();
         find_node_query.set_origin(self.self_node.serialize());
         find_node_query.set_target(self.self_node.get_address().to_str());
         let mut envelope = messages::Envelope::new();
         envelope.set_message_type(messages::Envelope_Type::FIND_NODE_QUERY);
         envelope.set_find_node_query(find_node_query);
+        envelope.set_transaction_id(transaction_id);
         node.send(envelope);
     }
 }
