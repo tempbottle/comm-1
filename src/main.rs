@@ -1,4 +1,5 @@
 extern crate crypto;
+extern crate mio;
 extern crate num;
 extern crate protobuf;
 extern crate rustc_serialize;
