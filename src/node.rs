@@ -86,8 +86,8 @@ impl Addressable for UdpNode {
 
 #[cfg(test)]
 mod tests {
-    use super::{Node, UdpNode};
     use address::Address;
+    use super::{Node, UdpNode};
 
     #[test]
     fn test_update() {
