@@ -4,44 +4,46 @@ use node::{Node, Deserialize, Serialize};
 use node;
 use protobuf;
 use routing_table::RoutingTable;
-use std::sync::{Arc, Mutex, mpsc};
-use std::thread;
-use std::collections::HashSet;
+use std::net::{SocketAddr, IpAddr};
+use std::str::FromStr;
 use transaction::TransactionIdGenerator;
+use routing_table;
+use mio::udp;
+use mio;
+
+const SERVER: mio::Token = mio::Token(0);
 
 pub struct Handler {
-    routing_table: Arc<Mutex<RoutingTable>>,
-    self_node: Arc<Box<node::Node + 'static>>,
+    server: udp::UdpSocket,
+    routing_table: RoutingTable,
+    self_node: Box<node::Node + 'static>,
     transaction_ids: TransactionIdGenerator
 }
 
 impl Handler {
-    pub fn new<N: node::Node + 'static>(
-        routing_table: Arc<Mutex<RoutingTable>>,
-        self_node: N) -> Handler {
+    pub fn new<N: node::Node + 'static>(self_node: N, port: u16) -> Handler {
+        let address = self_node.get_address();
+        let routing_table = routing_table::RoutingTable::new(8, address);
+        let socket_address = SocketAddr::new(IpAddr::from_str("0.0.0.0").unwrap(), port);
+        let server = udp::UdpSocket::bound(&socket_address).unwrap();
 
         Handler {
+            server: server,
             routing_table: routing_table,
-            self_node: Arc::new(Box::new(self_node)),
+            self_node: Box::new(self_node),
             transaction_ids: TransactionIdGenerator::new()
         }
     }
 
-    pub fn run<N: node::Node + 'static>(
-        mut self,
-        messages: mpsc::Receiver<(usize, [u8; 4096])>,
-        bootstrap_node: N) {
-
+    pub fn run<N: node::Node + 'static>(&mut self, bootstrap_node: N) {
         let bootstrap_node = Box::new(bootstrap_node);
-
-        thread::spawn(move || {
-            self.query_node_for_self(&bootstrap_node);
-            loop {
-                let (size, buf) = messages.recv().unwrap();
-                let message = protobuf::parse_from_bytes::<messages::Envelope>(&buf[0..size]).unwrap();
-                self.handle_message(message);
-            }
-        });
+        let mut event_loop = mio::EventLoop::new().unwrap();
+        event_loop.register(&self.server,
+                            SERVER,
+                            mio::EventSet::readable(),
+                            mio::PollOpt::level()).unwrap();
+        self.query_node_for_self(&bootstrap_node);
+        event_loop.run(self).unwrap();
     }
 
     fn handle_message(&mut self, message: messages::Envelope) {
@@ -49,13 +51,12 @@ impl Handler {
 
         match message.get_message_type() {
             messages::Envelope_Type::FIND_NODE_QUERY => {
-                let mut routing_table = self.routing_table.lock().unwrap();
                 let find_node_query = message.get_find_node_query();
                 let origin = node::UdpNode::deserialize(find_node_query.get_origin());
                 let target = Address::from_str(find_node_query.get_target());
 
                 {
-                    let nodes: Vec<&Box<node::Node>> = routing_table.nearest_to(&target);
+                    let nodes: Vec<&Box<node::Node>> = self.routing_table.nearest_to(&target);
                     println!("Nearest nodes: {:?}", nodes);
                     let nodes: Vec<messages::Node> = nodes.iter().map(|n| n.serialize()).collect();
                     let mut find_node_response = messages::FindNodeResponse::new();
@@ -69,18 +70,16 @@ impl Handler {
                     origin.send(response);
                 }
 
-                routing_table.insert(origin);
+                self.routing_table.insert(origin);
             }
             messages::Envelope_Type::FIND_NODE_RESPONSE => {
-                let mut routing_table = self.routing_table.lock().unwrap();
-
                 let find_node_response = message.get_find_node_response();
                 let origin = node::UdpNode::deserialize(find_node_response.get_origin());
-                routing_table.insert(origin);
+                self.routing_table.insert(origin);
 
                 for node in find_node_response.get_nodes() {
                     let node = node::UdpNode::deserialize(node);
-                    routing_table.insert(node);
+                    self.routing_table.insert(node);
                 }
             }
         }
@@ -96,5 +95,29 @@ impl Handler {
         envelope.set_find_node_query(find_node_query);
         envelope.set_transaction_id(transaction_id);
         node.send(envelope);
+    }
+}
+
+impl mio::Handler for Handler {
+    type Timeout = ();
+    type Message = ();
+
+    fn ready(&mut self, event_loop: &mut mio::EventLoop<Handler>, token: mio::Token, events: mio::EventSet) {
+        match token {
+            SERVER => {
+                assert!(events.is_readable());
+
+                let mut buf = [0; 4096];
+                match self.server.recv_from(&mut buf) {
+                    Ok(Some((size, _src))) => {
+                        let message = protobuf::parse_from_bytes::<messages::Envelope>(&buf[0..size]).unwrap();
+                        self.handle_message(message);
+                    }
+                    Ok(None) => println!("Looks like the socket wasn't ready after all"),
+                    Err(e) => panic!("Error receiving from server: {}", e)
+                }
+            }
+            _ => panic!("Received a connection from some other socket?!")
+        }
     }
 }
