@@ -1,20 +1,24 @@
 use address::Address;
 use messages;
+use mio;
 use node::{Node, Deserialize, Serialize};
 use node;
+use protobuf::Message;
 use protobuf;
 use routing_table::RoutingTable;
-use std::net::{SocketAddr, IpAddr};
-use std::str::FromStr;
-use transaction::TransactionIdGenerator;
 use routing_table;
-use mio::udp;
-use mio;
+use std::io::Cursor;
+use std::str::FromStr;
+use std::thread;
+use transaction::TransactionIdGenerator;
 
-const SERVER: mio::Token = mio::Token(0);
+pub enum OneshotTask {
+    Incoming(Vec<u8>),
+    StartBootstrap(Box<node::Node>)
+}
 
 pub struct Handler {
-    server: udp::UdpSocket,
+    port: u16,
     routing_table: RoutingTable,
     self_node: Box<node::Node + 'static>,
     transaction_ids: TransactionIdGenerator
@@ -24,29 +28,28 @@ impl Handler {
     pub fn new<N: node::Node + 'static>(self_node: N, port: u16) -> Handler {
         let address = self_node.get_address();
         let routing_table = routing_table::RoutingTable::new(8, address);
-        let socket_address = SocketAddr::new(IpAddr::from_str("0.0.0.0").unwrap(), port);
-        let server = udp::UdpSocket::bound(&socket_address).unwrap();
 
         Handler {
-            server: server,
+            port: port,
             routing_table: routing_table,
             self_node: Box::new(self_node),
             transaction_ids: TransactionIdGenerator::new()
         }
     }
 
-    pub fn run<N: node::Node + 'static>(&mut self, bootstrap_node: N) {
+    pub fn run<N: node::Node + 'static>(mut self, bootstrap_node: N) {
         let bootstrap_node = Box::new(bootstrap_node);
         let mut event_loop = mio::EventLoop::new().unwrap();
-        event_loop.register(&self.server,
-                            SERVER,
-                            mio::EventSet::readable(),
-                            mio::PollOpt::level()).unwrap();
-        self.query_node_for_self(&bootstrap_node);
-        event_loop.run(self).unwrap();
+        let loop_channel = event_loop.channel();
+
+        create_incoming_udp_channel(self.port, loop_channel.clone());
+        loop_channel.send(OneshotTask::StartBootstrap(bootstrap_node)).unwrap();
+        event_loop.run(&mut self).unwrap();
     }
 
-    fn handle_message(&mut self, message: messages::Envelope) {
+    fn handle_incoming(&mut self, data: Vec<u8>) {
+        let mut data = Cursor::new(data);
+        let message = protobuf::parse_from_reader::<messages::Envelope>(&mut data).unwrap();
         println!("Message: {:?}", message);
 
         match message.get_message_type() {
@@ -85,7 +88,7 @@ impl Handler {
         }
     }
 
-    fn query_node_for_self<N: node::Node + 'static>(&mut self, node: &Box<N>) {
+    fn query_node_for_self(&mut self, node: &Box<Node>) {
         let transaction_id = self.transaction_ids.generate();
         let mut find_node_query = messages::FindNodeQuery::new();
         find_node_query.set_origin(self.self_node.serialize());
@@ -101,24 +104,31 @@ impl Handler {
 
 impl mio::Handler for Handler {
     type Timeout = ();
-    type Message = ();
+    type Message = OneshotTask;
 
-    fn ready(&mut self, event_loop: &mut mio::EventLoop<Handler>, token: mio::Token, events: mio::EventSet) {
-        match token {
-            SERVER => {
-                assert!(events.is_readable());
-
-                let mut buf = [0; 4096];
-                match self.server.recv_from(&mut buf) {
-                    Ok(Some((size, _src))) => {
-                        let message = protobuf::parse_from_bytes::<messages::Envelope>(&buf[0..size]).unwrap();
-                        self.handle_message(message);
-                    }
-                    Ok(None) => println!("Looks like the socket wasn't ready after all"),
-                    Err(e) => panic!("Error receiving from server: {}", e)
-                }
+    fn notify(&mut self, event_loop: &mut mio::EventLoop<Handler>, task: OneshotTask) {
+        match task {
+            OneshotTask::Incoming(data) => self.handle_incoming(data),
+            OneshotTask::StartBootstrap(node) => {
+                self.query_node_for_self(&node);
             }
-            _ => panic!("Received a connection from some other socket?!")
         }
     }
+}
+
+fn create_incoming_udp_channel(port: u16, sender: mio::Sender<OneshotTask>) {
+    use std::net::UdpSocket;
+    thread::spawn(move || {
+        let address = ("0.0.0.0", port);
+        let socket = UdpSocket::bind(address).unwrap();
+        loop {
+            let mut buf = [0; 4096];
+            match socket.recv_from(&mut buf) {
+                Ok((size, _src)) => {
+                    sender.send(OneshotTask::Incoming(buf[..size].iter().cloned().collect())).unwrap();
+                }
+                Err(e) => panic!("Error receiving from server: {}", e)
+            }
+        }
+    });
 }
