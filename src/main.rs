@@ -27,6 +27,6 @@ fn main() {
     let bootstrap_address = ("127.0.0.1", args[3].clone().parse::<u16>().unwrap());
     let bootstrap_node = UdpNode::new(Address::null(), bootstrap_address);
 
-    let mut handler = network::Handler::new(self_node, port);
+    let handler = network::Handler::new(self_node, port);
     handler.run(bootstrap_node);
 }
