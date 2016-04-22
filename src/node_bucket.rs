@@ -94,7 +94,6 @@ impl NodeBucket {
 mod tests {
     use address::{Address, Addressable};
     use node::{Node, Serialize};
-    use protobuf::Message;
     use messages;
     use super::NodeBucket;
 
@@ -117,7 +116,7 @@ mod tests {
 
     impl Node for TestNode {
         fn update(&mut self) { }
-        fn send<M: Message>(&self, _: M) { }
+        fn send(&self, _: Vec<u8>) { }
     }
 
     impl Serialize for TestNode {

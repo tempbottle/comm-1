@@ -66,8 +66,8 @@ impl Handler {
                     response.set_message_type(messages::Envelope_Type::FIND_NODE_RESPONSE);
                     response.set_find_node_response(find_node_response);
                     response.set_transaction_id(self.transaction_ids.generate());
-
-                    origin.send(response);
+                    let buf = response.write_to_bytes().unwrap();
+                    origin.send(buf);
                 }
 
                 self.routing_table.insert(origin);
@@ -94,7 +94,8 @@ impl Handler {
         envelope.set_message_type(messages::Envelope_Type::FIND_NODE_QUERY);
         envelope.set_find_node_query(find_node_query);
         envelope.set_transaction_id(transaction_id);
-        node.send(envelope);
+        let buf = envelope.write_to_bytes().unwrap();
+        node.send(buf);
     }
 }
 

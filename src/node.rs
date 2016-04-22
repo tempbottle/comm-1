@@ -1,6 +1,5 @@
 use address::{Address, Addressable};
 use messages;
-use protobuf::Message;
 use std::net::{SocketAddr, ToSocketAddrs, UdpSocket, Ipv4Addr};
 use std::fmt::Debug;
 use time;
@@ -15,7 +14,7 @@ pub trait Deserialize {
 
 pub trait Node : Addressable + Debug + Serialize + Send + Sync {
     fn update(&mut self);
-    fn send<M: Message>(&self, message: M) where Self : Sized;
+    fn send(&self, message: Vec<u8>);
 }
 
 impl PartialEq for Node {
@@ -51,10 +50,9 @@ impl Node for UdpNode {
         self.last_seen = time::now_utc()
     }
 
-    fn send<M: Message>(&self, message: M) {
+    fn send(&self, message: Vec<u8>) {
         let socket = UdpSocket::bind("0.0.0.0:0").unwrap();
-        let ref buf = message.write_to_bytes().unwrap()[..];
-        socket.send_to(buf, self.socket_address).unwrap();
+        socket.send_to(&message[..], self.socket_address).unwrap();
     }
 }
 

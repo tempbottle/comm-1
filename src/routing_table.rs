@@ -67,7 +67,6 @@ mod tests {
     use address::{Address, Addressable};
     use messages;
     use node::{Node, Serialize};
-    use protobuf::Message;
     use super::RoutingTable;
 
     #[derive(Debug,Clone,Copy)]
@@ -89,7 +88,7 @@ mod tests {
 
     impl Node for TestNode {
         fn update(&mut self) { }
-        fn send<M: Message>(&self, _: M) { }
+        fn send(&self, _: Vec<u8>) { }
     }
 
     impl Serialize for TestNode {
