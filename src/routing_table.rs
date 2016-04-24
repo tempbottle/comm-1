@@ -92,8 +92,8 @@ mod tests {
     }
 
     impl Serialize for TestNode {
-        fn serialize(&self) -> messages::Node {
-            messages::Node::new()
+        fn serialize(&self) -> messages::protobufs::Node {
+            messages::protobufs::Node::new()
         }
     }
 

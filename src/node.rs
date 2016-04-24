@@ -5,11 +5,11 @@ use std::fmt::Debug;
 use time;
 
 pub trait Serialize {
-    fn serialize(&self) -> messages::Node;
+    fn serialize(&self) -> messages::protobufs::Node;
 }
 
 pub trait Deserialize {
-    fn deserialize(message: &messages::Node) -> Self;
+    fn deserialize(message: &messages::protobufs::Node) -> Self;
 }
 
 pub trait Node : Addressable + Debug + Serialize + Send + Sync {
@@ -57,7 +57,7 @@ impl Node for UdpNode {
 }
 
 impl Deserialize for UdpNode {
-    fn deserialize(message: &messages::Node) -> UdpNode {
+    fn deserialize(message: &messages::protobufs::Node) -> UdpNode {
         let ip = message.get_ip_address();
         let ip = Ipv4Addr::new(ip[0], ip[1], ip[2], ip[3]);
         let port = message.get_port() as u16;
@@ -67,8 +67,8 @@ impl Deserialize for UdpNode {
 }
 
 impl Serialize for UdpNode {
-    fn serialize(&self) -> messages::Node {
-        let mut message = messages::Node::new();
+    fn serialize(&self) -> messages::protobufs::Node {
+        let mut message = messages::protobufs::Node::new();
         message.set_id(self.address.to_str());
         message.set_ip_address(vec![127, 0, 0, 1]); // TODO: use actual IP address
         message.set_port(self.socket_address.port() as u32);
