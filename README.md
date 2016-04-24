@@ -20,3 +20,11 @@ A hypothetical, distributed, encrypted, instant messaging protocol.
   - acknowledgement has signature of message recipient (using their private key)
 0. Network nodes drop messages after verifying their acknowledgement
 0. Network nodes re-announce acknowledgement a reasonable number of times
+
+## Development
+
+You need to have the protobuf crate installed and in your path. Add your multirust
+crate bin path to your `PATH` if you use multirust:
+
+    cargo install protobuf
+    PATH=~/.multirust/toolchains/stable/cargo/bin:$PATH
