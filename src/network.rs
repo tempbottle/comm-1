@@ -1,4 +1,5 @@
 use address::Address;
+use messages::outgoing;
 use messages;
 use mio;
 use node::{Node, Deserialize, Serialize};
@@ -48,46 +49,49 @@ impl Handler {
     }
 
     fn handle_incoming(&mut self, data: Vec<u8>) {
-        use messages::*;
+        use messages::incoming;
+        use messages::incoming::*;
         let mut data = Cursor::new(data);
-        let message = protobuf::parse_from_reader::<protobufs::Envelope>(&mut data).unwrap();
+        let message = incoming::parse_from_reader(&mut data).unwrap();
         println!("Message: {:?}", message);
 
-        match message.get_message_type() {
-            protobufs::Envelope_Type::FIND_NODE_QUERY => {
-                let find_node_query = message.get_find_node_query();
-                let origin = node::UdpNode::deserialize(find_node_query.get_origin());
-                let target = Address::from_str(find_node_query.get_target());
+        match message {
+            Message::Query(transaction_id, query) => {
+                match query {
+                    Query::FindNode(origin, target) => {
+                        {
+                            let nodes: Vec<&Box<node::Node>> = self.routing_table.nearest_to(&target);
+                            let response = outgoing::create_find_node_response(
+                                self.transaction_ids.generate(),
+                                &self.self_node,
+                                nodes);
+                            origin.send(response);
+                        }
 
-                {
-                    let nodes: Vec<&Box<node::Node>> = self.routing_table.nearest_to(&target);
-                    let response = Message::Response(
-                        self.transaction_ids.generate(),
-                        Response::FindNode(&self.self_node, nodes));
-                    origin.send(response.serialize());
+                        self.routing_table.insert(origin);
+                    }
                 }
-
-                self.routing_table.insert(origin);
             }
-            protobufs::Envelope_Type::FIND_NODE_RESPONSE => {
-                let find_node_response = message.get_find_node_response();
-                let origin = node::UdpNode::deserialize(find_node_response.get_origin());
-                self.routing_table.insert(origin);
+            Message::Response(transaction_id, response) => {
+                match response {
+                    Response::FindNode(origin, nodes) => {
+                        self.routing_table.insert(origin);
 
-                for node in find_node_response.get_nodes() {
-                    let node = node::UdpNode::deserialize(node);
-                    self.routing_table.insert(node);
+                        for node in nodes {
+                            self.routing_table.insert(node);
+                        }
+                    }
                 }
             }
         }
     }
 
     fn query_node_for_self(&mut self, node: &Box<Node>) {
-        use messages::*;
-        let query = Message::Query(
+        let query = outgoing::create_find_node_query(
             self.transaction_ids.generate(),
-            Query::FindNode(&self.self_node, self.self_node.get_address()));
-        node.send(query.serialize());
+            &self.self_node,
+            self.self_node.get_address());
+        node.send(query);
     }
 }
 

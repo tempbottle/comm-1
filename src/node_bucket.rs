@@ -39,9 +39,8 @@ impl NodeBucket {
         self.nodes.iter().map(|(_, node)| node).collect()
     }
 
-    pub fn insert<N: Node + 'static>(&mut self, node: N) {
+    pub fn insert(&mut self, node: Box<Node>) {
         let address = node.get_address();
-        let node = Box::new(node);
         if let Some(pos) = self.addresses.iter().position(|&a| a == address) {
             self.addresses.remove(pos);
             self.addresses.insert(0, address);
@@ -97,7 +96,7 @@ mod tests {
     use messages;
     use super::NodeBucket;
 
-    #[derive(Debug,Clone,Copy)]
+    #[derive(Debug)]
     struct TestNode {
         pub address: Address
     }
@@ -128,7 +127,7 @@ mod tests {
     #[test]
     fn test_insert() {
         let mut bucket: NodeBucket = NodeBucket::new(8);
-        let node = TestNode::new(Address::for_content("some string"));
+        let node = Box::new(TestNode::new(Address::for_content("some string")));
         bucket.insert(node);
         assert_eq!(bucket.addresses.len(), 1);
     }
@@ -136,24 +135,27 @@ mod tests {
     #[test]
     fn test_insert_duplicate() {
         let mut bucket: NodeBucket = NodeBucket::new(8);
-        let a = TestNode::new(Address::for_content("node 1"));
-        let b = TestNode::new(Address::for_content("node 2"));
-        let c = TestNode::new(Address::for_content("node 1"));
+        let addr_1 = Address::for_content("node 1");
+        let addr_2 = Address::for_content("node 2");
+        let addr_3 = Address::for_content("node 1");
+        let a = Box::new(TestNode::new(addr_1));
+        let b = Box::new(TestNode::new(addr_2));
+        let c = Box::new(TestNode::new(addr_3));
 
-        bucket.insert(a.clone());
+        bucket.insert(a);
         bucket.insert(b);
         bucket.insert(c);
 
         assert_eq!(bucket.addresses.len(), 2);
-        assert_eq!(bucket.nodes[&Address::for_content("node 1")].get_address(), a.get_address());
+        assert_eq!(bucket.nodes[&Address::for_content("node 1")].get_address(), addr_1);
     }
 
     #[test]
     fn test_insert_full() {
         let mut bucket: NodeBucket = NodeBucket::new(2);
-        bucket.insert(TestNode::new(Address::for_content("node 1")));
-        bucket.insert(TestNode::new(Address::for_content("node 2")));
-        bucket.insert(TestNode::new(Address::for_content("node 3")));
+        bucket.insert(Box::new(TestNode::new(Address::for_content("node 1"))));
+        bucket.insert(Box::new(TestNode::new(Address::for_content("node 2"))));
+        bucket.insert(Box::new(TestNode::new(Address::for_content("node 3"))));
         assert_eq!(bucket.addresses.len(), 2);
         assert_eq!(bucket.nodes.get(&Address::for_content("node 3")), None);
     }
@@ -163,15 +165,15 @@ mod tests {
         let mut bucket: NodeBucket = NodeBucket::new(2);
         assert!(!bucket.is_full());
 
-        bucket.insert(TestNode::new(Address::for_content("node 1")));
-        bucket.insert(TestNode::new(Address::for_content("node 2")));
+        bucket.insert(Box::new(TestNode::new(Address::for_content("node 1"))));
+        bucket.insert(Box::new(TestNode::new(Address::for_content("node 2"))));
         assert!(bucket.is_full());
     }
 
     #[test]
     fn test_contains() {
         let mut bucket: NodeBucket = NodeBucket::new(8);
-        bucket.insert(TestNode::new(Address::for_content("node 1")));
+        bucket.insert(Box::new(TestNode::new(Address::for_content("node 1"))));
         assert!(bucket.contains(&Address::for_content("node 1")));
     }
 
@@ -187,10 +189,14 @@ mod tests {
     #[test]
     fn test_split() {
         let mut bucket: NodeBucket = NodeBucket::new(4);
-        let node_1 = TestNode::new(Address::from_str("0000000000000000000000000000000000000000"));
-        let node_2 = TestNode::new(Address::from_str("7fffffffffffffffffffffffffffffffffffffff"));
-        let node_3 = TestNode::new(Address::from_str("8000000000000000000000000000000000000000"));
-        let node_4 = TestNode::new(Address::from_str("ffffffffffffffffffffffffffffffffffffffff"));
+        let addr_1 = Address::from_str("0000000000000000000000000000000000000000");
+        let addr_2 = Address::from_str("7fffffffffffffffffffffffffffffffffffffff");
+        let addr_3 = Address::from_str("8000000000000000000000000000000000000000");
+        let addr_4 = Address::from_str("ffffffffffffffffffffffffffffffffffffffff");
+        let node_1 = Box::new(TestNode::new(addr_1));
+        let node_2 = Box::new(TestNode::new(addr_2));
+        let node_3 = Box::new(TestNode::new(addr_3));
+        let node_4 = Box::new(TestNode::new(addr_4));
 
         bucket.insert(node_1);
         bucket.insert(node_2);
@@ -204,11 +210,11 @@ mod tests {
         assert_eq!(b.addresses.len(), 2);
 
         // Splits up known nodes
-        assert_eq!(a.nodes[&Address::from_str("0000000000000000000000000000000000000000")].get_address(), node_1.get_address());
-        assert_eq!(a.nodes[&Address::from_str("0000000000000000000000000000000000000000")].get_address(), node_1.get_address());
-        assert_eq!(a.nodes[&Address::from_str("7fffffffffffffffffffffffffffffffffffffff")].get_address(), node_2.get_address());
-        assert_eq!(b.nodes[&Address::from_str("8000000000000000000000000000000000000000")].get_address(), node_3.get_address());
-        assert_eq!(b.nodes[&Address::from_str("ffffffffffffffffffffffffffffffffffffffff")].get_address(), node_4.get_address());
+        assert_eq!(a.nodes[&Address::from_str("0000000000000000000000000000000000000000")].get_address(), addr_1);
+        assert_eq!(a.nodes[&Address::from_str("0000000000000000000000000000000000000000")].get_address(), addr_1);
+        assert_eq!(a.nodes[&Address::from_str("7fffffffffffffffffffffffffffffffffffffff")].get_address(), addr_2);
+        assert_eq!(b.nodes[&Address::from_str("8000000000000000000000000000000000000000")].get_address(), addr_3);
+        assert_eq!(b.nodes[&Address::from_str("ffffffffffffffffffffffffffffffffffffffff")].get_address(), addr_4);
 
         // Equitably covers address space
         assert!(a.covers(&Address::from_str("0000000000000000000000000000000000000000")));
