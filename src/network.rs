@@ -1,15 +1,10 @@
-use address::Address;
 use messages::outgoing;
-use messages;
 use mio;
-use node::{Node, Deserialize, Serialize};
+use node::Node;
 use node;
-use protobuf::Message;
-use protobuf;
 use routing_table::RoutingTable;
 use routing_table;
 use std::io::Cursor;
-use std::str::FromStr;
 use std::thread;
 use transaction::TransactionIdGenerator;
 
@@ -72,7 +67,7 @@ impl Handler {
                     }
                 }
             }
-            Message::Response(transaction_id, response) => {
+            Message::Response(_transaction_id, response) => {
                 match response {
                     Response::FindNode(origin, nodes) => {
                         self.routing_table.insert(origin);

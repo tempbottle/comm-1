@@ -1,6 +1,3 @@
-use address::Address;
-use protobuf;
-
 pub mod protobufs;
 
 pub mod incoming {
@@ -50,9 +47,7 @@ pub mod incoming {
                     }
                 }
             }
-            Err(error) => {
-                Err("Failed to parse protobuf")
-            }
+            Err(_) => { Err("Failed to parse protobuf") }
         }
     }
 }
