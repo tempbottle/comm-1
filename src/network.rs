@@ -62,7 +62,7 @@ impl Handler {
                         {
                             let nodes: Vec<&Box<node::Node>> = self.routing_table.nearest_to(&target);
                             let response = outgoing::create_find_node_response(
-                                self.transaction_ids.generate(),
+                                transaction_id,
                                 &self.self_node,
                                 nodes);
                             origin.send(response);
