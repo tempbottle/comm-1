@@ -34,7 +34,7 @@ impl Address {
     }
 
     pub fn null() -> Address {
-        let data = [0u8; 20];
+        let data = [0; 20];
         Address { data: data }
     }
 
