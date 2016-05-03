@@ -2,15 +2,21 @@ use address::{LENGTH, Address, Addressable};
 use node::Node;
 use num::bigint::{BigUint, ToBigUint};
 use std::collections::HashMap;
+use std::fmt;
 use num;
 
-#[derive(Debug)]
 pub struct NodeBucket {
     k: usize,
     min: BigUint,
     max: BigUint,
     addresses: Vec<Address>,
     nodes: HashMap<Address, Box<Node>>
+}
+
+impl fmt::Debug for NodeBucket {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "NodeBucket {{ {:040x} - {:040x}, {} }}", self.min, self.max, self.addresses.len())
+    }
 }
 
 impl NodeBucket {
