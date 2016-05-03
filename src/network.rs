@@ -8,22 +8,42 @@ use std::io::Cursor;
 use std::thread;
 use transaction::TransactionIdGenerator;
 
+pub enum ScheduledTask {
+    RefreshBucket(u16)
+}
+
 pub enum OneshotTask {
     Incoming(Vec<u8>),
-    StartBootstrap(Box<node::Node>)
+    StartBootstrap
+}
+
+enum Status {
+    Bootstrapped,
+    Bootstrappping,
+    Idle
+}
+
+impl Status {
+    fn is_bootstrapping(&self) -> bool {
+        match self {
+            &Status::Bootstrappping => true,
+            _ => false
+        }
+    }
 }
 
 pub struct Handler {
     port: u16,
     routing_table: RoutingTable,
     self_node: Box<node::Node + 'static>,
-    transaction_ids: TransactionIdGenerator
+    transaction_ids: TransactionIdGenerator,
+    status: Status
 }
 
 impl Handler {
-    pub fn new<N: node::Node + 'static>(self_node: N, port: u16) -> Handler {
+    pub fn new<N: node::Node + 'static>(self_node: N, port: u16, routers: Vec<Box<Node>>) -> Handler {
         let address = self_node.get_address();
-        let routing_table = routing_table::RoutingTable::new(8, address);
+        let routing_table = routing_table::RoutingTable::new(8, address, routers);
 
         Handler {
             port: port,
@@ -33,13 +53,12 @@ impl Handler {
         }
     }
 
-    pub fn run<N: node::Node + 'static>(mut self, bootstrap_node: N) {
-        let bootstrap_node = Box::new(bootstrap_node);
+    pub fn run(mut self) {
         let mut event_loop = mio::EventLoop::new().unwrap();
         let loop_channel = event_loop.channel();
 
         create_incoming_udp_channel(self.port, loop_channel.clone());
-        loop_channel.send(OneshotTask::StartBootstrap(bootstrap_node)).unwrap();
+        loop_channel.send(OneshotTask::StartBootstrap).unwrap();
         event_loop.run(&mut self).unwrap();
     }
 
@@ -81,12 +100,19 @@ impl Handler {
         }
     }
 
-    fn query_node_for_self(&mut self, node: &Box<Node>) {
+    fn handle_start_bootstrap(&mut self, event_loop: &mut mio::EventLoop<Self>) {
+        self.status = Status::Bootstrappping;
+        self.find_self(event_loop);
+    }
+
+    fn find_self(&mut self, event_loop: &mut mio::EventLoop<Handler>) {
         let query = outgoing::create_find_node_query(
             self.transaction_ids.generate(),
             &self.self_node,
             self.self_node.get_address());
-        node.send(query);
+        if let Some(node) = self.routing_table.nearest_to(&self.self_node.get_address()).get(0) {
+            node.send(query);
+        }
     }
 }
 
@@ -97,8 +123,8 @@ impl mio::Handler for Handler {
     fn notify(&mut self, event_loop: &mut mio::EventLoop<Handler>, task: OneshotTask) {
         match task {
             OneshotTask::Incoming(data) => self.handle_incoming(data),
-            OneshotTask::StartBootstrap(node) => {
-                self.query_node_for_self(&node);
+            OneshotTask::StartBootstrap => {
+                self.handle_start_bootstrap(event_loop);
             }
         }
     }

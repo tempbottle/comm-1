@@ -6,15 +6,17 @@ use node::Node;
 pub struct RoutingTable {
     k: usize,
     self_address: Address,
+    routers: Vec<Box<Node>>,
     buckets: Vec<NodeBucket>
 }
 
 impl RoutingTable {
-    pub fn new(k: usize, self_address: Address) -> RoutingTable {
+    pub fn new(k: usize, self_address: Address, routers: Vec<Box<Node>>) -> RoutingTable {
         let bucket = NodeBucket::new(k);
         RoutingTable {
             k: k,
             self_address: self_address,
+            routers: routers,
             buckets: vec![bucket]
         }
     }
@@ -45,7 +47,8 @@ impl RoutingTable {
 
         candidates.sort_by_key(|n| n.get_address().distance_from(address));
 
-        candidates.into_iter().take(self.k).collect()
+        // chain on routers in case we don't have enough nodes yet
+        candidates.into_iter().chain(self.routers.iter()).take(self.k).collect()
     }
 
     fn bucket_for(&self, address: &Address) -> usize {
@@ -100,7 +103,8 @@ mod tests {
     #[test]
     fn test_insert() {
         let self_node = Address::from_str("0000000000000000000000000000000000000000");
-        let mut table: RoutingTable = RoutingTable::new(2, self_node);
+        let router = Box::new(TestNode::new(Address::null()));
+        let mut table: RoutingTable = RoutingTable::new(2, self_node, vec![router]);
         table.insert(Box::new(TestNode::new(Address::from_str("0000000000000000000000000000000000000001"))));
         table.insert(Box::new(TestNode::new(Address::from_str("ffffffffffffffffffffffffffffffffffffffff"))));
         assert_eq!(table.buckets.len(), 1);
@@ -128,7 +132,8 @@ mod tests {
     #[test]
     fn test_nearest_to() {
         let self_node = Address::from_str("0000000000000000000000000000000000000000");
-        let mut table: RoutingTable = RoutingTable::new(2, self_node);
+        let router = Box::new(TestNode::new(Address::null()));
+        let mut table: RoutingTable = RoutingTable::new(2, self_node, vec![router]);
         let addr_1 = Address::from_str("0000000000000000000000000000000000000001");
         let addr_2 = Address::from_str("7ffffffffffffffffffffffffffffffffffffffe");
         let addr_3 = Address::from_str("ffffffffffffffffffffffffffffffffffffffff");
