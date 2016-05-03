@@ -56,7 +56,8 @@ impl NodeBucket {
     }
 
     pub fn split(&mut self) -> (Self, Self) {
-        let partition = self.max.clone() / 2.to_biguint().unwrap();
+        let difference = self.max.clone() - self.min.clone();
+        let partition = difference / 2.to_biguint().unwrap() + self.min.clone();
         let addresses = self.addresses.clone();
         let (a_addresses, b_addresses): (Vec<Address>, Vec<Address>) = addresses
             .into_iter()
