@@ -2,19 +2,24 @@ use messages::outgoing;
 use mio;
 use node::Node;
 use node;
-use routing_table::RoutingTable;
+use routing_table::{InsertOutcome, RoutingTable};
 use routing_table;
+use std::collections::HashMap;
 use std::io::Cursor;
 use std::thread;
 use transaction::{TransactionId, TransactionIdGenerator};
 
 pub enum ScheduledTask {
-    RefreshBucket(u16)
+    ContinueBootstrap
 }
 
 pub enum OneshotTask {
     Incoming(Vec<u8>),
     StartBootstrap
+}
+
+enum TableAction {
+    Bootstrap(mio::Timeout)
 }
 
 enum Status {
@@ -23,33 +28,27 @@ enum Status {
     Idle
 }
 
-impl Status {
-    fn is_bootstrapping(&self) -> bool {
-        match self {
-            &Status::Bootstrapping => true,
-            _ => false
-        }
-    }
-}
-
 pub struct Handler {
     port: u16,
     routing_table: RoutingTable,
     self_node: Box<node::Node + 'static>,
     transaction_ids: TransactionIdGenerator,
-    status: Status
+    status: Status,
+    pending_actions: HashMap<TransactionId, TableAction>
 }
 
 impl Handler {
     pub fn new<N: node::Node + 'static>(self_node: N, port: u16, routers: Vec<Box<Node>>) -> Handler {
-        let address = self_node.get_address();
-        let routing_table = routing_table::RoutingTable::new(8, address, routers);
+        let self_address = self_node.get_address();
+        let routing_table = routing_table::RoutingTable::new(8, self_address, routers);
 
         Handler {
             port: port,
             routing_table: routing_table,
             self_node: Box::new(self_node),
-            transaction_ids: TransactionIdGenerator::new()
+            transaction_ids: TransactionIdGenerator::new(),
+            status: Status::Idle,
+            pending_actions: HashMap::new()
         }
     }
 
@@ -62,12 +61,12 @@ impl Handler {
         event_loop.run(&mut self).unwrap();
     }
 
-    fn handle_incoming(&mut self, data: Vec<u8>) {
+    fn handle_incoming(&mut self, data: Vec<u8>, event_loop: &mut mio::EventLoop<Handler>) {
         use messages::incoming;
         use messages::incoming::*;
         let mut data = Cursor::new(data);
         let message = incoming::parse_from_reader(&mut data).unwrap();
-        println!("Message: {:?}", message);
+        println!("Routing table: {:?}", self.routing_table);
 
         match message {
             Message::Query(transaction_id, query) => {
@@ -82,17 +81,39 @@ impl Handler {
                             origin.send(response);
                         }
 
-                        self.routing_table.insert(origin);
+                        self.routing_table.insert(origin).unwrap();
                     }
                 }
             }
-            Message::Response(_transaction_id, response) => {
+            Message::Response(transaction_id, response) => {
                 match response {
-                    Response::FindNode(origin, nodes) => {
-                        self.routing_table.insert(origin);
+                    Response::FindNode(origin, mut nodes) => {
+                        let mut encounted_new_node = false;
+                        let mut tail = vec![origin];
+                        for node in nodes.drain(..).chain(tail.drain(..)) {
+                            match self.routing_table.insert(node) {
+                                Ok(InsertOutcome::Inserted) => { encounted_new_node = true; }
+                                _ => { }
+                            }
+                        }
 
-                        for node in nodes {
-                            self.routing_table.insert(node);
+                        match self.pending_actions.remove(&transaction_id) {
+                            Some(TableAction::Bootstrap(timeout)) => {
+                                event_loop.clear_timeout(timeout);
+                            }
+                            None => { }
+                        }
+
+                        match self.status {
+                            Status::Bootstrapping => {
+                                if encounted_new_node {
+                                    // Continue botstrapping
+                                    self.continue_bootstrap(event_loop);
+                                } else {
+                                    self.status = Status::Bootstrapped;
+                                }
+                            }
+                            _ => { }
                         }
                     }
                 }
@@ -100,32 +121,44 @@ impl Handler {
         }
     }
 
-    fn handle_start_bootstrap(&mut self, event_loop: &mut mio::EventLoop<Self>) {
-        self.find_self(event_loop);
+    fn start_bootstrap(&mut self, event_loop: &mut mio::EventLoop<Self>) {
         self.status = Status::Bootstrapping;
+        self.continue_bootstrap(event_loop);
     }
 
-    fn find_self(&mut self, event_loop: &mut mio::EventLoop<Handler>) {
+    fn continue_bootstrap(&mut self, event_loop: &mut mio::EventLoop<Self>) {
+        let transaction_id = self.find_self();
+        let timeout = event_loop.timeout_ms(ScheduledTask::ContinueBootstrap, 1000).unwrap();
+        self.pending_actions.insert(transaction_id, TableAction::Bootstrap(timeout));
+    }
+
+    fn find_self(&mut self) -> TransactionId {
+        let transaction_id = self.transaction_ids.generate();
         let query = outgoing::create_find_node_query(
-            self.transaction_ids.generate(),
+            transaction_id,
             &self.self_node,
             self.self_node.get_address());
-        if let Some(node) = self.routing_table.nearest_to(&self.self_node.get_address()).get(0) {
+        if let Some(node) = self.routing_table.nearest().get(0) {
             node.send(query);
         }
+        transaction_id
     }
 }
 
 impl mio::Handler for Handler {
-    type Timeout = ();
+    type Timeout = ScheduledTask;
     type Message = OneshotTask;
 
     fn notify(&mut self, event_loop: &mut mio::EventLoop<Handler>, task: OneshotTask) {
         match task {
-            OneshotTask::Incoming(data) => self.handle_incoming(data),
-            OneshotTask::StartBootstrap => {
-                self.handle_start_bootstrap(event_loop);
-            }
+            OneshotTask::Incoming(data) => self.handle_incoming(data, event_loop),
+            OneshotTask::StartBootstrap => self.start_bootstrap(event_loop)
+        }
+    }
+
+    fn timeout(&mut self, event_loop: &mut mio::EventLoop<Handler>, timeout: ScheduledTask) {
+        match timeout {
+            ScheduledTask::ContinueBootstrap => self.continue_bootstrap(event_loop)
         }
     }
 }
