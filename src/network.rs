@@ -19,14 +19,14 @@ pub enum OneshotTask {
 
 enum Status {
     Bootstrapped,
-    Bootstrappping,
+    Bootstrapping,
     Idle
 }
 
 impl Status {
     fn is_bootstrapping(&self) -> bool {
         match self {
-            &Status::Bootstrappping => true,
+            &Status::Bootstrapping => true,
             _ => false
         }
     }
@@ -101,8 +101,8 @@ impl Handler {
     }
 
     fn handle_start_bootstrap(&mut self, event_loop: &mut mio::EventLoop<Self>) {
-        self.status = Status::Bootstrappping;
         self.find_self(event_loop);
+        self.status = Status::Bootstrapping;
     }
 
     fn find_self(&mut self, event_loop: &mut mio::EventLoop<Handler>) {
