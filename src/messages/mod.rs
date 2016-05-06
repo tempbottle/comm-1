@@ -1,12 +1,13 @@
 pub mod protobufs;
 
 pub mod incoming {
-    use std::io::Read;
     use address::Address;
     use node::{Deserialize, Node};
     use node;
     use protobuf;
+    use std::io::Read;
     use super::protobufs;
+    use transaction::TransactionId;
 
     #[derive(Debug)]
     pub enum Query {
@@ -20,8 +21,8 @@ pub mod incoming {
 
     #[derive(Debug)]
     pub enum Message {
-        Query(u32, Query),
-        Response(u32, Response)
+        Query(TransactionId, Query),
+        Response(TransactionId, Response)
     }
 
     pub fn parse_from_reader(reader: &mut Read) -> Result<Message, &str> {
@@ -57,8 +58,9 @@ pub mod outgoing {
     use node::Node;
     use protobuf;
     use super::protobufs;
+    use transaction::TransactionId;
 
-    pub fn create_find_node_query(transaction_id: u32, origin: &Box<Node>, target: Address) -> Vec<u8> {
+    pub fn create_find_node_query(transaction_id: TransactionId, origin: &Box<Node>, target: Address) -> Vec<u8> {
         use protobuf::Message;
         let mut envelope = protobufs::Envelope::new();
         envelope.set_transaction_id(transaction_id);
@@ -70,7 +72,7 @@ pub mod outgoing {
         envelope.write_to_bytes().unwrap()
     }
 
-    pub fn create_find_node_response(transaction_id: u32, origin: &Box<Node>, nodes: Vec<&Box<Node>>) -> Vec<u8> {
+    pub fn create_find_node_response(transaction_id: TransactionId, origin: &Box<Node>, nodes: Vec<&Box<Node>>) -> Vec<u8> {
         use protobuf::Message;
         let mut envelope = protobufs::Envelope::new();
         envelope.set_transaction_id(transaction_id);

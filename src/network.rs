@@ -6,7 +6,7 @@ use routing_table::RoutingTable;
 use routing_table;
 use std::io::Cursor;
 use std::thread;
-use transaction::TransactionIdGenerator;
+use transaction::{TransactionId, TransactionIdGenerator};
 
 pub enum ScheduledTask {
     RefreshBucket(u16)
