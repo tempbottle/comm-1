@@ -5,6 +5,15 @@ use std::collections::HashMap;
 use std::fmt;
 use num;
 
+#[derive(Debug, PartialEq)]
+pub enum InsertOutcome {
+    Inserted,   // Inserted new node
+    Updated,    // Updated existing node
+    Discarded   // Bucket is full
+}
+
+pub type InsertionResult = Result<InsertOutcome, String>;
+
 pub struct NodeBucket {
     k: usize,
     min: BigUint,
@@ -45,15 +54,23 @@ impl NodeBucket {
         self.nodes.iter().map(|(_, node)| node).collect()
     }
 
-    pub fn insert(&mut self, node: Box<Node>) {
+    pub fn insert(&mut self, node: Box<Node>) -> InsertionResult {
         let address = node.get_address();
-        if let Some(pos) = self.addresses.iter().position(|&a| a == address) {
-            self.addresses.remove(pos);
-            self.addresses.insert(0, address);
-            self.nodes.insert(address, node);
-        } else if !self.is_full() {
-            self.addresses.insert(0, address);
-            self.nodes.insert(address, node);
+        if self.covers(&address) {
+            if let Some(pos) = self.addresses.iter().position(|&a| a == address) {
+                self.addresses.remove(pos);
+                self.addresses.insert(0, address);
+                self.nodes.insert(address, node);
+                Ok(InsertOutcome::Updated)
+            } else if !self.is_full() {
+                self.addresses.insert(0, address);
+                self.nodes.insert(address, node);
+                Ok(InsertOutcome::Inserted)
+            } else {
+                Ok(InsertOutcome::Discarded)
+            }
+        } else {
+            Err(format!("Bucket {:?}  does not cover {:?}", self, address))
         }
     }
 
@@ -101,7 +118,7 @@ mod tests {
     use address::{Address, Addressable};
     use node::{Node, Serialize};
     use messages;
-    use super::NodeBucket;
+    use super::{InsertOutcome, NodeBucket};
 
     #[derive(Debug)]
     struct TestNode {
@@ -135,7 +152,7 @@ mod tests {
     fn test_insert() {
         let mut bucket: NodeBucket = NodeBucket::new(8);
         let node = Box::new(TestNode::new(Address::for_content("some string")));
-        bucket.insert(node);
+        assert_eq!(bucket.insert(node).unwrap(), InsertOutcome::Inserted);
         assert_eq!(bucket.addresses.len(), 1);
     }
 
@@ -149,9 +166,9 @@ mod tests {
         let b = Box::new(TestNode::new(addr_2));
         let c = Box::new(TestNode::new(addr_3));
 
-        bucket.insert(a);
-        bucket.insert(b);
-        bucket.insert(c);
+        bucket.insert(a).unwrap();
+        bucket.insert(b).unwrap();
+        assert_eq!(bucket.insert(c).unwrap(), InsertOutcome::Updated);
 
         assert_eq!(bucket.addresses.len(), 2);
         assert_eq!(bucket.nodes[&Address::for_content("node 1")].get_address(), addr_1);
@@ -160,11 +177,28 @@ mod tests {
     #[test]
     fn test_insert_full() {
         let mut bucket: NodeBucket = NodeBucket::new(2);
-        bucket.insert(Box::new(TestNode::new(Address::for_content("node 1"))));
-        bucket.insert(Box::new(TestNode::new(Address::for_content("node 2"))));
-        bucket.insert(Box::new(TestNode::new(Address::for_content("node 3"))));
+        bucket.insert(Box::new(TestNode::new(Address::for_content("node 1")))).unwrap();
+        bucket.insert(Box::new(TestNode::new(Address::for_content("node 2")))).unwrap();
+        let result = bucket.insert(Box::new(TestNode::new(Address::for_content("node 3")))).unwrap();
+        assert_eq!(result, InsertOutcome::Discarded);
         assert_eq!(bucket.addresses.len(), 2);
         assert_eq!(bucket.nodes.get(&Address::for_content("node 3")), None);
+    }
+
+    #[test]
+    fn insert_node_outside_of_address_space() {
+        use num::bigint::ToBigUint;
+        use std::collections::HashMap;
+
+        let mut bucket = NodeBucket {
+            k: 8,
+            min: 0.to_biguint().unwrap(),
+            max: 1.to_biguint().unwrap(),
+            addresses: vec![],
+            nodes: HashMap::new()
+        };
+        let result = bucket.insert(Box::new(TestNode::new(Address::for_content("node 3"))));
+        assert!(result.is_err());
     }
 
     #[test]
@@ -172,15 +206,15 @@ mod tests {
         let mut bucket: NodeBucket = NodeBucket::new(2);
         assert!(!bucket.is_full());
 
-        bucket.insert(Box::new(TestNode::new(Address::for_content("node 1"))));
-        bucket.insert(Box::new(TestNode::new(Address::for_content("node 2"))));
+        bucket.insert(Box::new(TestNode::new(Address::for_content("node 1")))).unwrap();
+        bucket.insert(Box::new(TestNode::new(Address::for_content("node 2")))).unwrap();
         assert!(bucket.is_full());
     }
 
     #[test]
     fn test_contains() {
         let mut bucket: NodeBucket = NodeBucket::new(8);
-        bucket.insert(Box::new(TestNode::new(Address::for_content("node 1"))));
+        bucket.insert(Box::new(TestNode::new(Address::for_content("node 1")))).unwrap();
         assert!(bucket.contains(&Address::for_content("node 1")));
     }
 
@@ -205,10 +239,10 @@ mod tests {
         let node_3 = Box::new(TestNode::new(addr_3));
         let node_4 = Box::new(TestNode::new(addr_4));
 
-        bucket.insert(node_1);
-        bucket.insert(node_2);
-        bucket.insert(node_3);
-        bucket.insert(node_4);
+        bucket.insert(node_1).unwrap();
+        bucket.insert(node_2).unwrap();
+        bucket.insert(node_3).unwrap();
+        bucket.insert(node_4).unwrap();
 
         let (a, b) = bucket.split();
 
