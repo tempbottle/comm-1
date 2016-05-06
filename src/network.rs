@@ -23,7 +23,6 @@ enum TableAction {
 }
 
 enum Status {
-    Bootstrapped,
     Bootstrapping,
     Idle
 }
@@ -110,7 +109,7 @@ impl Handler {
                                     // Continue botstrapping
                                     self.continue_bootstrap(event_loop);
                                 } else {
-                                    self.status = Status::Bootstrapped;
+                                    self.status = Status::Idle;
                                 }
                             }
                             _ => { }
