@@ -32,6 +32,8 @@ message Envelope {
     enum Type {
         FIND_NODE_QUERY = 1;
         FIND_NODE_RESPONSE = 2;
+        PING_QUERY = 3;
+        PING_RESPONSE = 4;
     }
     required Type message_type = 1;
     required uint32 transaction_id = 2;
@@ -39,4 +41,6 @@ message Envelope {
     // Replace these with Any type
     optional FindNodeQuery find_node_query = 3;
     optional FindNodeResponse find_node_response = 4;
+    optional PingQuery ping_query = 5;
+    optional PingResponse ping_response = 6;
 }
