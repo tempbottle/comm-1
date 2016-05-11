@@ -60,8 +60,9 @@ impl NodeBucket {
             if let Some(pos) = self.addresses.iter().position(|&a| a == address) {
                 self.addresses.remove(pos);
                 self.addresses.insert(0, address);
-                self.nodes.insert(address, node);
                 Ok(InsertOutcome::Updated)
+                // TODO: Should this update the node's socket address incase a devise has changed
+                // IPs?
             } else if !self.is_full() {
                 self.addresses.insert(0, address);
                 self.nodes.insert(address, node);
