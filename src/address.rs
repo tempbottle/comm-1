@@ -39,6 +39,7 @@ impl Address {
     }
 
     pub fn as_numeric(&self) -> num::BigUint {
+        // TODO: Expensive
         num::BigUint::from_bytes_be(&self.data)
     }
 
