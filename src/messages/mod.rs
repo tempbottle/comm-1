@@ -11,18 +11,20 @@ pub mod incoming {
 
     #[derive(Debug)]
     pub enum Query {
-        FindNode(Box<Node>, Address)
+        FindNode(Address),
+        Ping
     }
 
     #[derive(Debug)]
     pub enum Response {
-        FindNode(Box<Node>, Vec<Box<Node>>)
+        FindNode(Vec<Box<Node>>),
+        Ping
     }
 
     #[derive(Debug)]
     pub enum Message {
-        Query(TransactionId, Query),
-        Response(TransactionId, Response)
+        Query(TransactionId, Box<Node>, Query),
+        Response(TransactionId, Box<Node>, Response)
     }
 
     pub fn parse_from_reader(reader: &mut Read) -> Result<Message, &str> {
@@ -34,7 +36,7 @@ pub mod incoming {
                         let find_node_query = message.get_find_node_query();
                         let origin = Box::new(node::UdpNode::deserialize(find_node_query.get_origin()));
                         let target = Address::from_str(find_node_query.get_target());
-                        Ok(Message::Query(transaction_id, Query::FindNode(origin, target)))
+                        Ok(Message::Query(transaction_id, origin, Query::FindNode(target)))
                     }
                     protobufs::Envelope_Type::FIND_NODE_RESPONSE => {
                         let find_node_response = message.get_find_node_response();
@@ -44,7 +46,17 @@ pub mod incoming {
                             let node: Box<Node> = Box::new(node::UdpNode::deserialize(n));
                             node
                         }).collect();
-                        Ok(Message::Response(transaction_id, Response::FindNode(origin, nodes)))
+                        Ok(Message::Response(transaction_id, origin, Response::FindNode(nodes)))
+                    }
+                    protobufs::Envelope_Type::PING_QUERY => {
+                        let ping_query = message.get_ping_query();
+                        let origin = Box::new(node::UdpNode::deserialize(ping_query.get_origin()));
+                        Ok(Message::Query(transaction_id, origin, Query::Ping))
+                    },
+                    protobufs::Envelope_Type::PING_RESPONSE => {
+                        let ping_response = message.get_ping_response();
+                        let origin = Box::new(node::UdpNode::deserialize(ping_response.get_origin()));
+                        Ok(Message::Response(transaction_id, origin, Response::Ping))
                     }
                 }
             }
@@ -56,12 +68,12 @@ pub mod incoming {
 pub mod outgoing {
     use address::Address;
     use node::Node;
+    use protobuf::Message;
     use protobuf;
     use super::protobufs;
     use transaction::TransactionId;
 
     pub fn create_find_node_query(transaction_id: TransactionId, origin: &Box<Node>, target: Address) -> Vec<u8> {
-        use protobuf::Message;
         let mut envelope = protobufs::Envelope::new();
         envelope.set_transaction_id(transaction_id);
         envelope.set_message_type(protobufs::Envelope_Type::FIND_NODE_QUERY);
@@ -72,8 +84,7 @@ pub mod outgoing {
         envelope.write_to_bytes().unwrap()
     }
 
-    pub fn create_find_node_response(transaction_id: TransactionId, origin: &Box<Node>, nodes: Vec<&Box<Node>>) -> Vec<u8> {
-        use protobuf::Message;
+    pub fn create_find_node_response(transaction_id: TransactionId, origin: &Box<Node>, nodes: Vec<&mut Box<Node>>) -> Vec<u8> {
         let mut envelope = protobufs::Envelope::new();
         envelope.set_transaction_id(transaction_id);
         envelope.set_message_type(protobufs::Envelope_Type::FIND_NODE_RESPONSE);
@@ -86,6 +97,26 @@ pub mod outgoing {
         response.set_nodes(protobuf::RepeatedField::from_slice(
                 nodes.as_slice()));
         envelope.set_find_node_response(response);
+        envelope.write_to_bytes().unwrap()
+    }
+
+    pub fn create_ping_query(transaction_id: TransactionId, origin: &Box<Node>) -> Vec<u8> {
+        let mut envelope = protobufs::Envelope::new();
+        envelope.set_transaction_id(transaction_id);
+        envelope.set_message_type(protobufs::Envelope_Type::PING_QUERY);
+        let mut query = protobufs::PingQuery::new();
+        query.set_origin(origin.serialize());
+        envelope.set_ping_query(query);
+        envelope.write_to_bytes().unwrap()
+    }
+
+    pub fn create_ping_response(transaction_id: TransactionId, origin: &Box<Node>) -> Vec<u8> {
+        let mut envelope = protobufs::Envelope::new();
+        envelope.set_transaction_id(transaction_id);
+        envelope.set_message_type(protobufs::Envelope_Type::PING_RESPONSE);
+        let mut response = protobufs::PingResponse::new();
+        response.set_origin(origin.serialize());
+        envelope.set_ping_response(response);
         envelope.write_to_bytes().unwrap()
     }
 }

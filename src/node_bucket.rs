@@ -24,7 +24,8 @@ pub struct NodeBucket {
 
 impl fmt::Debug for NodeBucket {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "NodeBucket {{ {:040x} - {:040x}, {} }}", self.min, self.max, self.addresses.len())
+        write!(f, "NodeBucket {{ [{:040x} - {:040x}], {:?} }}",
+               self.min, self.max, self.addresses)
     }
 }
 
@@ -41,6 +42,10 @@ impl NodeBucket {
         }
     }
 
+    pub fn find_node(&mut self, address: &Address) -> Option<&mut Box<Node>> {
+        self.nodes.get_mut(address)
+    }
+
     pub fn contains(&self, address: &Address) -> bool {
         self.addresses.contains(address)
     }
@@ -50,8 +55,8 @@ impl NodeBucket {
         self.min <= numeric && numeric < self.max
     }
 
-    pub fn get_nodes(&self) -> Vec<&Box<Node>> {
-        self.nodes.iter().map(|(_, node)| node).collect()
+    pub fn get_nodes(&mut self) -> Vec<&mut Box<Node>> {
+        self.nodes.iter_mut().map(|(_, node)| node).collect()
     }
 
     pub fn insert(&mut self, node: Box<Node>) -> InsertionResult {
@@ -117,37 +122,8 @@ impl NodeBucket {
 #[cfg(test)]
 mod tests {
     use address::{Address, Addressable};
-    use node::{Node, Serialize};
-    use messages;
     use super::{InsertOutcome, NodeBucket};
-
-    #[derive(Debug)]
-    struct TestNode {
-        pub address: Address
-    }
-
-    impl TestNode {
-        fn new(address: Address) -> TestNode {
-            TestNode { address: address }
-        }
-    }
-
-    impl Addressable for TestNode {
-        fn get_address(&self) -> Address {
-            self.address
-        }
-    }
-
-    impl Node for TestNode {
-        fn update(&mut self) { }
-        fn send(&self, _: Vec<u8>) { }
-    }
-
-    impl Serialize for TestNode {
-        fn serialize(&self) -> messages::protobufs::Node {
-            messages::protobufs::Node::new()
-        }
-    }
+    use tests::TestNode;
 
     #[test]
     fn test_insert() {

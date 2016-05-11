@@ -16,6 +16,8 @@ mod node;
 mod node_bucket;
 mod routing_table;
 mod transaction;
+#[cfg(test)]
+mod tests;
 
 fn main() {
     let args: Vec<String> = env::args().collect();

@@ -58,11 +58,18 @@ impl RoutingTable {
         }
     }
 
-        self.nearest_to(&self.self_address)
-    pub fn nearest(&mut self) -> Vec<&mut Box<Node>> {
+    pub fn find_node(&mut self, address: &Address) -> Option<&mut Box<Node>> {
+        let index = self.bucket_for(address);
+        let bucket = self.buckets.get_mut(index).unwrap();
+        bucket.find_node(address)
     }
 
-    pub fn nearest_to(&mut self, address: &Address) -> Vec<&mut Box<Node>> {
+    pub fn nearest(&mut self) -> Vec<&mut Box<Node>> {
+        let self_address = self.self_address;
+        self.nearest_to(&self_address, true)
+    }
+
+    pub fn nearest_to(&mut self, address: &Address, include_routers: bool) -> Vec<&mut Box<Node>> {
         // TODO: this should walk buckets much more efficiently
 
         let mut candidates: Vec<&mut Box<Node>> = self.buckets
@@ -73,7 +80,21 @@ impl RoutingTable {
         candidates.sort_by_key(|n| n.get_address().distance_from(address));
 
         // chain on routers in case we don't have enough nodes yet
-        candidates.into_iter().chain(self.routers.iter()).take(self.k).collect()
+        if include_routers {
+            candidates.into_iter().chain(self.routers.iter_mut()).take(self.k).collect()
+        } else {
+            candidates.into_iter().take(self.k).collect()
+        }
+    }
+
+    pub fn questionable_nodes(&mut self) -> Vec<&mut Box<Node>> {
+        // TODO: this should walk buckets much more efficiently
+
+        self.buckets
+            .iter_mut()
+            .flat_map(|b| b.get_nodes())
+            .filter(|n| n.is_questionable())
+            .collect()
     }
 
     fn bucket_for(&self, address: &Address) -> usize {
@@ -93,37 +114,8 @@ impl RoutingTable {
 #[cfg(test)]
 mod tests {
     use address::{Address, Addressable};
-    use messages;
-    use node::{Node, Serialize};
     use super::{InsertOutcome, RoutingTable};
-
-    #[derive(Debug)]
-    struct TestNode {
-        pub address: Address
-    }
-
-    impl TestNode {
-        fn new(address: Address) -> TestNode {
-            TestNode { address: address }
-        }
-    }
-
-    impl Addressable for TestNode {
-        fn get_address(&self) -> Address {
-            self.address
-        }
-    }
-
-    impl Node for TestNode {
-        fn update(&mut self) { }
-        fn send(&self, _: Vec<u8>) { }
-    }
-
-    impl Serialize for TestNode {
-        fn serialize(&self) -> messages::protobufs::Node {
-            messages::protobufs::Node::new()
-        }
-    }
+    use tests::TestNode;
 
     #[test]
     fn test_insert() {
@@ -173,11 +165,15 @@ mod tests {
         table.insert(node_2).unwrap();
         table.insert(node_3).unwrap();
 
-        let nearest = table.nearest_to(&Address::from_str("fffffffffffffffffffffffffffffffffffffffd"));
-        assert_eq!(nearest[0].get_address(), addr_3);
-        assert_eq!(nearest[1].get_address(), addr_2);
-        let nearest = table.nearest_to(&Address::from_str("0000000000000000000000000000000000000002"));
-        assert_eq!(nearest[0].get_address(), addr_1);
-        assert_eq!(nearest[1].get_address(), addr_2);
+        {
+            let nearest = table.nearest_to(&Address::from_str("fffffffffffffffffffffffffffffffffffffffd"), false);
+            assert_eq!(nearest[0].get_address(), addr_3);
+            assert_eq!(nearest[1].get_address(), addr_2);
+        }
+        {
+            let nearest = table.nearest_to(&Address::from_str("0000000000000000000000000000000000000002"), false);
+            assert_eq!(nearest[0].get_address(), addr_1);
+            assert_eq!(nearest[1].get_address(), addr_2);
+        }
     }
 }

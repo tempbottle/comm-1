@@ -10,7 +10,8 @@ use std::thread;
 use transaction::{TransactionId, TransactionIdGenerator};
 
 pub enum ScheduledTask {
-    ContinueBootstrap
+    ContinueBootstrap,
+    ContinueHealthCheck
 }
 
 pub enum OneshotTask {
@@ -19,7 +20,8 @@ pub enum OneshotTask {
 }
 
 enum TableAction {
-    Bootstrap(mio::Timeout)
+    Bootstrap(mio::Timeout),
+    HealthCheck(mio::Timeout)
 }
 
 enum Status {
@@ -65,39 +67,65 @@ impl Handler {
         use messages::incoming::*;
         let mut data = Cursor::new(data);
         let message = incoming::parse_from_reader(&mut data).unwrap();
-        println!("Routing table: {:?}", self.routing_table);
 
         match message {
-            Message::Query(transaction_id, query) => {
+            Message::Query(transaction_id, origin, query) => {
+                let origin_address = origin.get_address();
                 match query {
-                    Query::FindNode(origin, target) => {
-                        {
-                            let nodes: Vec<&Box<node::Node>> = self.routing_table.nearest_to(&target);
-                            let response = outgoing::create_find_node_response(
+                    Query::FindNode(target) => {
+                        let response: Vec<u8> = outgoing::create_find_node_response(
                                 transaction_id,
                                 &self.self_node,
-                                nodes);
-                            origin.send(response);
-                        }
+                                self.routing_table.nearest_to(&target, false));
+                        origin.send(response);
 
                         self.routing_table.insert(origin).unwrap();
+                        {
+                            if let Some(origin) = self.routing_table.find_node(&origin_address) {
+                                origin.received_query(transaction_id);
+                            }
+                        }
+                    },
+                    Query::Ping => {
+                        let response = outgoing::create_ping_response(
+                            transaction_id,
+                            &self.self_node);
+                        origin.send(response);
+
+                        self.routing_table.insert(origin).unwrap();
+                        if let Some(origin) = self.routing_table.find_node(&origin_address) {
+                            origin.received_query(transaction_id);
+                        }
                     }
                 }
             }
-            Message::Response(transaction_id, response) => {
+            Message::Response(transaction_id, origin, response) => {
+                let origin_address = origin.get_address();
                 match response {
-                    Response::FindNode(origin, mut nodes) => {
+                    Response::FindNode(mut nodes) => {
                         let mut encounted_new_node = false;
                         let mut tail = vec![origin];
                         for node in nodes.drain(..).chain(tail.drain(..)) {
                             match self.routing_table.insert(node) {
-                                Ok(InsertOutcome::Inserted) => { encounted_new_node = true; }
+                                Ok(InsertOutcome::Inserted) => {
+                                    encounted_new_node = true;
+                                }
                                 _ => { }
                             }
                         }
 
+                        {
+                            let mut origin = self.routing_table
+                                .find_node(&origin_address)
+                                .expect("Got find node response from unknown node");
+                            origin.received_response(transaction_id);
+                        }
+
                         match self.pending_actions.remove(&transaction_id) {
                             Some(TableAction::Bootstrap(timeout)) => {
+                                event_loop.clear_timeout(timeout);
+                            }
+                            Some(TableAction::HealthCheck(timeout)) => {
                                 event_loop.clear_timeout(timeout);
                             }
                             None => { }
@@ -110,14 +138,25 @@ impl Handler {
                                     self.continue_bootstrap(event_loop);
                                 } else {
                                     self.status = Status::Idle;
+                                    self.continue_health_check(event_loop);
                                 }
                             }
                             _ => { }
                         }
                     }
+                    Response::Ping => {
+                        let mut origin = self.routing_table.find_node(&origin_address).expect("Got ping response from unknown node");
+                        origin.received_response(transaction_id);
+                    }
                 }
             }
         }
+    }
+
+    fn continue_health_check(&mut self, event_loop: &mut mio::EventLoop<Self>) {
+        let transaction_id = self.health_check();
+        let timeout = event_loop.timeout_ms(ScheduledTask::ContinueHealthCheck, 1000).unwrap();
+        self.pending_actions.insert(transaction_id, TableAction::HealthCheck(timeout));
     }
 
     fn start_bootstrap(&mut self, event_loop: &mut mio::EventLoop<Self>) {
@@ -137,8 +176,22 @@ impl Handler {
             transaction_id,
             &self.self_node,
             self.self_node.get_address());
-        if let Some(node) = self.routing_table.nearest().get(0) {
+        if let Some(node) = self.routing_table.nearest().get_mut(0) {
+            {
+                node.send(query);
+            }
+            node.sent_query(transaction_id);
+        }
+        transaction_id
+    }
+
+    fn health_check(&mut self) -> TransactionId {
+        let transaction_id = self.transaction_ids.generate();
+        let query = outgoing::create_ping_query(
+            transaction_id, &self.self_node);
+        if let Some(node) = self.routing_table.questionable_nodes().get_mut(0) {
             node.send(query);
+            node.sent_query(transaction_id);
         }
         transaction_id
     }
@@ -157,7 +210,8 @@ impl mio::Handler for Handler {
 
     fn timeout(&mut self, event_loop: &mut mio::EventLoop<Handler>, timeout: ScheduledTask) {
         match timeout {
-            ScheduledTask::ContinueBootstrap => self.continue_bootstrap(event_loop)
+            ScheduledTask::ContinueBootstrap => self.continue_bootstrap(event_loop),
+            ScheduledTask::ContinueHealthCheck => self.continue_health_check(event_loop)
         }
     }
 }

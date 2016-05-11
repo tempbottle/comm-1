@@ -1,20 +1,31 @@
 use address::{Address, Addressable};
 use messages;
-use std::net::{SocketAddr, ToSocketAddrs, UdpSocket, Ipv4Addr};
 use std::fmt::Debug;
+use std::net::{SocketAddr, ToSocketAddrs, UdpSocket, Ipv4Addr};
+use std::collections::HashMap;
 use time;
-
-pub trait Serialize {
-    fn serialize(&self) -> messages::protobufs::Node;
-}
+use transaction::TransactionId;
 
 pub trait Deserialize {
     fn deserialize(message: &messages::protobufs::Node) -> Self;
 }
 
+pub trait Serialize {
+    fn serialize(&self) -> messages::protobufs::Node;
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Status {
+    Good,
+    Questionable
+}
+
 pub trait Node : Addressable + Debug + Serialize + Send + Sync {
-    fn update(&mut self);
+    fn is_questionable(&self) -> bool;
+    fn received_query(&mut self, transaction_id: TransactionId);
+    fn received_response(&mut self, transaction_id: TransactionId);
     fn send(&self, message: Vec<u8>);
+    fn sent_query(&mut self, transaction_id: TransactionId);
 }
 
 impl PartialEq for Node {
@@ -27,7 +38,9 @@ impl PartialEq for Node {
 pub struct UdpNode {
     address: Address,
     socket_address: SocketAddr,
-    last_seen: time::Tm
+    pending_queries: HashMap<TransactionId, time::Tm>,
+    has_ever_responded: bool,
+    last_seen: time::Tm,
 }
 
 impl UdpNode {
@@ -40,19 +53,51 @@ impl UdpNode {
         UdpNode {
             address: address,
             socket_address: socket_address,
-            last_seen: time::now_utc()
+            pending_queries: HashMap::new(),
+            has_ever_responded: false,
+            last_seen: time::empty_tm(),
+        }
+    }
+
+    fn status(&self) -> Status {
+        let time_since_last_seen = time::now_utc() - self.last_seen;
+
+        if self.has_ever_responded && time_since_last_seen < time::Duration::minutes(1) {
+            Status::Good
+        } else {
+            Status::Questionable
         }
     }
 }
 
 impl Node for UdpNode {
-    fn update(&mut self) {
-        self.last_seen = time::now_utc()
+    fn is_questionable(&self) -> bool {
+        self.status() == Status::Questionable
+    }
+
+    fn received_query(&mut self, _: TransactionId) {
+        self.last_seen = time::now_utc();
+    }
+
+    fn received_response(&mut self, transaction_id: TransactionId) {
+        self.last_seen = time::now_utc();
+        if let Some(queried_at) = self.pending_queries.remove(&transaction_id) {
+            self.has_ever_responded = true;
+            let time_to_respond = time::now_utc() - queried_at;
+            println!("{} took {:?} to respond", transaction_id, time_to_respond);
+        } else {
+            println!("{:?} was not expecting response to {}", self.address, transaction_id);
+            println!("pending queries: {:?}", self.pending_queries.len());
+        }
     }
 
     fn send(&self, message: Vec<u8>) {
         let socket = UdpSocket::bind("0.0.0.0:0").unwrap();
         socket.send_to(&message[..], self.socket_address).unwrap();
+    }
+
+    fn sent_query(&mut self, transaction_id: TransactionId) {
+        self.pending_queries.insert(transaction_id, time::now_utc());
     }
 }
 
@@ -88,12 +133,21 @@ mod tests {
     use super::{Node, UdpNode};
 
     #[test]
-    fn test_update() {
+    fn test_received_response() {
         let address = Address::for_content("some string");
         let mut node = UdpNode::new(address, ("0.0.0.0", 9000));
+
+        // When it's not expecting the response
+        node.received_response(1);
+        assert!(!node.has_ever_responded);
+
+        // When it's expecting the response
         let last_seen_before = node.last_seen;
-        node.update();
+        let transaction_id = 2;
+        node.sent_query(transaction_id);
+        node.received_response(transaction_id);
         let last_seen_after = node.last_seen;
         assert!(last_seen_before < last_seen_after);
+        assert!(node.has_ever_responded);
     }
 }
