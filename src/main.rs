@@ -24,9 +24,15 @@ fn main() {
     let port = args[2].clone().parse::<u16>().unwrap();
     let self_node = node::UdpNode::new(address, ("127.0.0.1", port));
 
-    let bootstrap_address = ("127.0.0.1", args[3].clone().parse::<u16>().unwrap());
-    let bootstrap_node = Box::new(UdpNode::new(Address::null(), bootstrap_address));
+    let routers: Vec<Box<node::Node>> = match args.get(3) {
+        Some(bootstrap_port) => {
+            let bootstrap_address = ("127.0.0.1", bootstrap_port.clone().parse::<u16>().unwrap());
+            let bootstrap_node = Box::new(UdpNode::new(Address::null(), bootstrap_address));
+            vec![bootstrap_node]
+        }
+        None => vec![]
+    };
 
-    let handler = network::Handler::new(self_node, port, vec![bootstrap_node]);
+    let handler = network::Handler::new(self_node, port, routers);
     handler.run();
 }
