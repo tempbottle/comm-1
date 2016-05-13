@@ -6,8 +6,12 @@ use std::collections::HashMap;
 use time;
 use transaction::TransactionId;
 
-pub trait Deserialize {
-    fn deserialize(message: &messages::protobufs::Node) -> Self;
+pub fn deserialize(message: &messages::protobufs::Node) -> Box<Node> {
+    let ip = message.get_ip_address();
+    let ip = Ipv4Addr::new(ip[0], ip[1], ip[2], ip[3]);
+    let port = message.get_port() as u16;
+    let address = Address::from_str(message.get_id());
+    Box::new(UdpNode::new(address, (ip, port)))
 }
 
 pub trait Serialize {
@@ -98,16 +102,6 @@ impl Node for UdpNode {
 
     fn sent_query(&mut self, transaction_id: TransactionId) {
         self.pending_queries.insert(transaction_id, time::now_utc());
-    }
-}
-
-impl Deserialize for UdpNode {
-    fn deserialize(message: &messages::protobufs::Node) -> UdpNode {
-        let ip = message.get_ip_address();
-        let ip = Ipv4Addr::new(ip[0], ip[1], ip[2], ip[3]);
-        let port = message.get_port() as u16;
-        let address = Address::from_str(message.get_id());
-        Self::new(address, (ip, port))
     }
 }
 
