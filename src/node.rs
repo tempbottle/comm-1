@@ -1,7 +1,7 @@
 use address::{Address, Addressable};
 use messages;
 use std::fmt::Debug;
-use std::net::{SocketAddr, ToSocketAddrs, UdpSocket, Ipv4Addr};
+use std::net::{SocketAddr, ToSocketAddrs, UdpSocket, IpAddr, Ipv4Addr};
 use std::collections::HashMap;
 use time;
 use transaction::TransactionId;
@@ -109,7 +109,14 @@ impl Serialize for UdpNode {
     fn serialize(&self) -> messages::protobufs::Node {
         let mut message = messages::protobufs::Node::new();
         message.set_id(self.address.to_str());
-        message.set_ip_address(vec![127, 0, 0, 1]); // TODO: use actual IP address
+        match self.socket_address.ip() {
+            IpAddr::V4(ipv4_addr) => {
+                message.set_ip_address(ipv4_addr.octets().iter().cloned().collect());
+            }
+            IpAddr::V6(ipv6_addr) => {
+                // TODO ipv6 node support
+            }
+        }
         message.set_port(self.socket_address.port() as u32);
         message
     }
@@ -124,7 +131,7 @@ impl Addressable for UdpNode {
 #[cfg(test)]
 mod tests {
     use address::Address;
-    use super::{Node, UdpNode};
+    use super::{Node, UdpNode, Serialize};
 
     #[test]
     fn test_received_response() {
@@ -143,5 +150,18 @@ mod tests {
         let last_seen_after = node.last_seen;
         assert!(last_seen_before < last_seen_after);
         assert!(node.has_ever_responded);
+    }
+
+    #[test]
+    fn test_serialize() {
+        use messages;
+        use protobuf::Message;
+        let mut protobuf = messages::protobufs::Node::new();
+        protobuf.set_id("8b45e4bd1c6acb88bebf6407d16205f567e62a3e".to_string());
+        protobuf.set_ip_address(vec![192, 168, 1, 2]);
+        protobuf.set_port(9000);
+        let address = Address::for_content("some string");
+        let node = UdpNode::new(address, ("192.168.1.2", 9000));
+        assert_eq!(node.serialize(), protobuf);
     }
 }
