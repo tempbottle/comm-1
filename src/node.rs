@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use time;
 use transaction::TransactionId;
 
+const FAILED_TO_RESPOND_THRESHOLD: usize = 3;
 const MINUTES_UNTIL_QUESTIONABLE: i64 = 1;
 
 pub fn deserialize(message: &messages::protobufs::Node) -> Box<Node> {
@@ -23,7 +24,8 @@ pub trait Serialize {
 #[derive(Debug, PartialEq)]
 pub enum Status {
     Good,
-    Questionable
+    Questionable,
+    Bad
 }
 
 pub trait Node : Addressable + Debug + Serialize + Send + Sync {
@@ -71,8 +73,10 @@ impl UdpNode {
         if self.has_ever_responded &&
             time_since_last_seen < time::Duration::minutes(MINUTES_UNTIL_QUESTIONABLE) {
             Status::Good
-        } else {
+        } else if self.pending_queries.len() < FAILED_TO_RESPOND_THRESHOLD {
             Status::Questionable
+        } else {
+            Status::Bad
         }
     }
 }
