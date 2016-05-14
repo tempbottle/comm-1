@@ -6,6 +6,8 @@ use std::collections::HashMap;
 use time;
 use transaction::TransactionId;
 
+const MINUTES_UNTIL_QUESTIONABLE: i64 = 1;
+
 pub fn deserialize(message: &messages::protobufs::Node) -> Box<Node> {
     let ip = message.get_ip_address();
     let ip = Ipv4Addr::new(ip[0], ip[1], ip[2], ip[3]);
@@ -66,7 +68,8 @@ impl UdpNode {
     fn status(&self) -> Status {
         let time_since_last_seen = time::now_utc() - self.last_seen;
 
-        if self.has_ever_responded && time_since_last_seen < time::Duration::minutes(1) {
+        if self.has_ever_responded &&
+            time_since_last_seen < time::Duration::minutes(MINUTES_UNTIL_QUESTIONABLE) {
             Status::Good
         } else {
             Status::Questionable
