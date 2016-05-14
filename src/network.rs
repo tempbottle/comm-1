@@ -187,9 +187,9 @@ impl Handler {
 
     fn health_check(&mut self) -> TransactionId {
         let transaction_id = self.transaction_ids.generate();
-        let query = outgoing::create_ping_query(
-            transaction_id, &self.self_node);
         if let Some(node) = self.routing_table.questionable_nodes().get_mut(0) {
+            let query = outgoing::create_ping_query(
+                transaction_id, &self.self_node);
             node.send(query);
             node.sent_query(transaction_id);
         }
