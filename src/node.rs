@@ -120,7 +120,7 @@ impl Serialize for UdpNode {
             IpAddr::V4(ipv4_addr) => {
                 message.set_ip_address(ipv4_addr.octets().iter().cloned().collect());
             }
-            IpAddr::V6(ipv6_addr) => {
+            IpAddr::V6(_) => {
                 // TODO ipv6 node support
             }
         }
