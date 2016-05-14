@@ -42,10 +42,6 @@ impl NodeBucket {
         }
     }
 
-    pub fn find_node(&mut self, address: &Address) -> Option<&mut Box<Node>> {
-        self.nodes.get_mut(address)
-    }
-
     pub fn contains(&self, address: &Address) -> bool {
         self.addresses.contains(address)
     }
@@ -53,6 +49,10 @@ impl NodeBucket {
     pub fn covers(&self, address: &Address) -> bool {
         let numeric = address.as_numeric();
         self.min <= numeric && numeric < self.max
+    }
+
+    pub fn find_node(&mut self, address: &Address) -> Option<&mut Box<Node>> {
+        self.nodes.get_mut(address)
     }
 
     pub fn get_nodes(&mut self) -> Vec<&mut Box<Node>> {

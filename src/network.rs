@@ -153,12 +153,6 @@ impl Handler {
         }
     }
 
-    fn continue_health_check(&mut self, event_loop: &mut mio::EventLoop<Self>) {
-        let transaction_id = self.health_check();
-        let timeout = event_loop.timeout_ms(ScheduledTask::ContinueHealthCheck, 1000).unwrap();
-        self.pending_actions.insert(transaction_id, TableAction::HealthCheck(timeout));
-    }
-
     fn start_bootstrap(&mut self, event_loop: &mut mio::EventLoop<Self>) {
         self.status = Status::Bootstrapping;
         self.continue_bootstrap(event_loop);
@@ -168,6 +162,12 @@ impl Handler {
         let transaction_id = self.find_self();
         let timeout = event_loop.timeout_ms(ScheduledTask::ContinueBootstrap, 1000).unwrap();
         self.pending_actions.insert(transaction_id, TableAction::Bootstrap(timeout));
+    }
+
+    fn continue_health_check(&mut self, event_loop: &mut mio::EventLoop<Self>) {
+        let transaction_id = self.health_check();
+        let timeout = event_loop.timeout_ms(ScheduledTask::ContinueHealthCheck, 1000).unwrap();
+        self.pending_actions.insert(transaction_id, TableAction::HealthCheck(timeout));
     }
 
     fn find_self(&mut self) -> TransactionId {
