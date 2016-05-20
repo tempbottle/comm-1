@@ -28,3 +28,8 @@ crate bin path to your `PATH` if you use multirust:
 
     cargo install protobuf
     PATH=~/.multirust/toolchains/stable/cargo/bin:$PATH
+
+# Similar Projects
+
+* [Briar](https://briarproject.org/)
+* [Ensichat](https://github.com/Nutomic/ensichat)
