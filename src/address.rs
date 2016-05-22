@@ -21,6 +21,17 @@ impl Address {
         }
     }
 
+    pub fn from_numeric(numeric: num::BigUint) -> Address {
+        let bytes = numeric.to_bytes_be();
+        let mut data = [0; 20];
+        for (place, byte) in data.iter_mut().rev().zip(bytes.iter().rev()).rev() {
+            *place = *byte
+        }
+        Address {
+            data: data
+        }
+    }
+
     pub fn from_str(string: &str) -> Address {
         use rustc_serialize::hex::FromHex;
         let bytes = string.from_hex().unwrap();
@@ -66,12 +77,35 @@ impl fmt::Debug for Address {
 
 #[cfg(test)]
 mod tests {
-    use super::Address;
+    use num;
+    use super::{Address, LENGTH};
 
     #[test]
     fn test_for_content() {
         let address = Address::for_content("some string");
         assert_eq!(address.to_str(), "8b45e4bd1c6acb88bebf6407d16205f567e62a3e");
+    }
+
+    #[test]
+    fn test_from_numeric() {
+        use num::bigint::ToBigUint;
+
+        let numeric = 0x0000000000000000000000000000000000000001.to_biguint().unwrap();
+        let address = Address::from_numeric(numeric);
+        assert_eq!(address.as_numeric(), 0x0000000000000000000000000000000000000001.to_biguint().unwrap());
+        assert_eq!(address.to_str(), "0000000000000000000000000000000000000001");
+
+        let numeric = num::pow(2.to_biguint().unwrap(), 158) -
+            num::pow(2.to_biguint().unwrap(), 157) -
+            num::pow(2.to_biguint().unwrap(), 156);
+        let address = Address::from_numeric(numeric.clone());
+        assert_eq!(address.as_numeric(), numeric);
+        assert_eq!(address.to_str(), "1000000000000000000000000000000000000000");
+
+        let numeric = num::pow(2.to_biguint().unwrap(), LENGTH) - 1.to_biguint().unwrap();
+        let address = Address::from_numeric(numeric);
+        assert_eq!(address.as_numeric(), num::pow(2.to_biguint().unwrap(), LENGTH) - 1.to_biguint().unwrap());
+        assert_eq!(address.to_str(), "ffffffffffffffffffffffffffffffffffffffff");
     }
 
     #[test]
