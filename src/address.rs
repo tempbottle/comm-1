@@ -49,6 +49,15 @@ impl Address {
         Address { data: data }
     }
 
+    pub fn random(min: &num::BigUint, max: &num::BigUint) -> Address {
+        use rand;
+        use num::bigint::RandBigInt;
+
+        let mut rng = rand::StdRng::new().unwrap();
+        let numeric = rng.gen_biguint_range(min, max);
+        Self::from_numeric(numeric)
+    }
+
     pub fn as_numeric(&self) -> num::BigUint {
         // TODO: Expensive
         num::BigUint::from_bytes_be(&self.data)
