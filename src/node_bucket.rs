@@ -1,9 +1,13 @@
 use address::{LENGTH, Address, Addressable};
 use node::Node;
 use num::bigint::{BigUint, ToBigUint};
+use std::cmp;
 use std::collections::HashMap;
 use std::fmt;
+use time;
 use num;
+
+const MINUTES_UNTIL_NEEDS_REFRESH: i64 = 15;
 
 #[derive(Debug, PartialEq)]
 pub enum InsertOutcome {
@@ -19,13 +23,14 @@ pub struct NodeBucket {
     min: BigUint,
     max: BigUint,
     addresses: Vec<Address>,
-    nodes: HashMap<Address, Box<Node>>
+    nodes: HashMap<Address, Box<Node>>,
+    last_inserted: time::Tm
 }
 
 impl fmt::Debug for NodeBucket {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "NodeBucket {{ [{:040x} - {:040x}], {:?} }}",
-               self.min, self.max, self.addresses)
+        write!(f, "NodeBucket {{ [{:040x} - {:040x}], contains: {:?} last_changed: {:?}}}",
+               self.min, self.max, self.addresses, self.last_changed())
     }
 }
 
@@ -38,7 +43,8 @@ impl NodeBucket {
             min: min,
             max: max,
             addresses: Vec::with_capacity(k),
-            nodes: HashMap::with_capacity(k)
+            nodes: HashMap::with_capacity(k),
+            last_inserted: time::empty_tm()
         }
     }
 
@@ -59,18 +65,27 @@ impl NodeBucket {
         self.nodes.iter_mut().map(|(_, node)| node).collect()
     }
 
+    pub fn questionable_nodes(&mut self) -> Vec<&mut Box<Node>> {
+        self.nodes.iter_mut()
+            .map(|(_, node)| node)
+            .filter(|n| n.is_questionable())
+            .collect()
+    }
+
     pub fn insert(&mut self, node: Box<Node>) -> InsertionResult {
         let address = node.get_address();
         if self.covers(&address) {
-            if let Some(pos) = self.addresses.iter().position(|&a| a == address) {
+            if let Some(pos) = self.addresses.iter().position(|a| a == &address) {
+                // TODO: Should this update the node's socket address incase a device has changed
+                // IPs?
                 self.addresses.remove(pos);
                 self.addresses.insert(0, address);
+                self.last_inserted = time::now_utc();
                 Ok(InsertOutcome::Updated)
-                // TODO: Should this update the node's socket address incase a devise has changed
-                // IPs?
             } else if !self.is_full() {
                 self.addresses.insert(0, address);
                 self.nodes.insert(address, node);
+                self.last_inserted = time::now_utc();
                 Ok(InsertOutcome::Inserted)
             } else {
                 Ok(InsertOutcome::Discarded)
@@ -82,6 +97,23 @@ impl NodeBucket {
 
     pub fn is_full(&self) -> bool {
         self.addresses.len() >= self.k
+    }
+
+    pub fn last_changed(&self) -> time::Tm {
+        if let Some((_, node)) = self.nodes.iter().max_by_key(|&(_, node)| node.last_seen()) {
+            cmp::max(self.last_inserted, node.last_seen())
+        } else {
+            self.last_inserted
+        }
+    }
+
+    pub fn needs_refresh(&self) -> bool {
+        let time_since_changed = time::now_utc() - self.last_changed();
+        time_since_changed > time::Duration::minutes(MINUTES_UNTIL_NEEDS_REFRESH)
+    }
+
+    pub fn random_address_in_space(&self) -> Address {
+        Address::random(&self.min, &self.max)
     }
 
     pub fn split(&mut self) -> (Self, Self) {
@@ -106,14 +138,16 @@ impl NodeBucket {
             min: self.min.clone(),
             max: partition.clone(),
             addresses: a_addresses,
-            nodes: a_nodes
+            nodes: a_nodes,
+            last_inserted: self.last_inserted
         };
         let b = NodeBucket {
             k: self.k,
             min: partition.clone(),
             max: self.max.clone(),
             addresses: b_addresses,
-            nodes: b_nodes
+            nodes: b_nodes,
+            last_inserted: self.last_inserted
         };
         (a, b)
     }
@@ -124,6 +158,7 @@ mod tests {
     use address::{Address, Addressable};
     use super::{InsertOutcome, NodeBucket};
     use tests::TestNode;
+    use time;
 
     #[test]
     fn test_insert() {
@@ -172,7 +207,8 @@ mod tests {
             min: 0.to_biguint().unwrap(),
             max: 1.to_biguint().unwrap(),
             addresses: vec![],
-            nodes: HashMap::new()
+            nodes: HashMap::new(),
+            last_inserted: time::empty_tm()
         };
         let result = bucket.insert(Box::new(TestNode::new(Address::for_content("node 3"))));
         assert!(result.is_err());
@@ -243,5 +279,24 @@ mod tests {
         assert!(b.covers(&Address::from_str("8000000000000000000000000000000000000000")));
         assert!(!a.covers(&Address::from_str("ffffffffffffffffffffffffffffffffffffffff")));
         assert!(b.covers(&Address::from_str("ffffffffffffffffffffffffffffffffffffffff")));
+    }
+
+    #[test]
+    fn test_last_changed() {
+        let mut bucket: NodeBucket = NodeBucket::new(4);
+
+        // it updates upon inserting a node
+        let last_changed_before_insert = bucket.last_changed();
+        let addr = Address::from_str("0000000000000000000000000000000000000000");
+        let node = Box::new(TestNode::new(addr));
+        bucket.insert(node).unwrap();
+        let last_changed_after_insert = bucket.last_changed();
+        assert!(last_changed_before_insert < last_changed_after_insert);
+
+        // it updates when one of its nodes are heard from
+        let last_changed_before_received = bucket.last_changed();
+        bucket.find_node(&addr).unwrap().received_response(1);
+        let last_changed_after_received = bucket.last_changed();
+        assert!(last_changed_before_received < last_changed_after_received);
     }
 }

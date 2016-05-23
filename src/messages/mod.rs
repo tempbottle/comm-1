@@ -73,7 +73,7 @@ pub mod outgoing {
     use super::protobufs;
     use transaction::TransactionId;
 
-    pub fn create_find_node_query(transaction_id: TransactionId, origin: &Box<Node>, target: Address) -> Vec<u8> {
+    pub fn create_find_node_query(transaction_id: TransactionId, origin: &Box<Node>, target: &Address) -> Vec<u8> {
         let mut envelope = protobufs::Envelope::new();
         envelope.set_transaction_id(transaction_id);
         envelope.set_message_type(protobufs::Envelope_Type::FIND_NODE_QUERY);

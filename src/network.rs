@@ -1,8 +1,9 @@
+use address::Address;
 use messages::outgoing;
 use mio;
 use node::Node;
 use node;
-use routing_table::{InsertOutcome, RoutingTable};
+use routing_table::{InsertOutcome, InsertionResult, RoutingTable};
 use routing_table;
 use std::collections::HashMap;
 use std::io::Cursor;
@@ -11,7 +12,8 @@ use transaction::{TransactionId, TransactionIdGenerator};
 
 pub enum ScheduledTask {
     ContinueBootstrap,
-    ContinueHealthCheck
+    ContinueHealthCheck,
+    ContinueRefresh
 }
 
 pub enum OneshotTask {
@@ -21,7 +23,8 @@ pub enum OneshotTask {
 
 enum TableAction {
     Bootstrap(mio::Timeout),
-    HealthCheck(mio::Timeout)
+    HealthCheck(mio::Timeout),
+    RefreshBucket(mio::Timeout)
 }
 
 enum Status {
@@ -53,8 +56,10 @@ impl Network {
         }
     }
 
-        let mut event_loop = mio::EventLoop::new().unwrap();
     pub fn run(self) {
+        let mut event_loop_config = mio::EventLoopConfig::new();
+        event_loop_config.notify_capacity(16384);
+        let mut event_loop = mio::EventLoop::configured(event_loop_config).unwrap();
         let loop_channel = event_loop.channel();
 
         create_incoming_udp_channel(self.port, loop_channel.clone());
@@ -80,7 +85,7 @@ impl Network {
                                 self.routing_table.nearest_to(&target, false));
                         origin.send(response);
 
-                        self.routing_table.insert(origin).unwrap();
+                        self.insert_node(origin).unwrap();
                         {
                             if let Some(origin) = self.routing_table.find_node(&origin_address) {
                                 origin.received_query(transaction_id);
@@ -93,7 +98,7 @@ impl Network {
                             &self.self_node);
                         origin.send(response);
 
-                        self.routing_table.insert(origin).unwrap();
+                        self.insert_node(origin).unwrap();
                         if let Some(origin) = self.routing_table.find_node(&origin_address) {
                             origin.received_query(transaction_id);
                         }
@@ -107,10 +112,11 @@ impl Network {
                         let mut encounted_new_node = false;
                         let mut tail = vec![origin];
                         for node in nodes.drain(..).chain(tail.drain(..)) {
-                            match self.routing_table.insert(node) {
+                            match self.insert_node(node) {
                                 Ok(InsertOutcome::Inserted) => {
                                     encounted_new_node = true;
                                 }
+                                Err(error) => { panic!(error) }
                                 _ => { }
                             }
                         }
@@ -125,22 +131,23 @@ impl Network {
                         match self.pending_actions.remove(&transaction_id) {
                             Some(TableAction::Bootstrap(timeout)) => {
                                 event_loop.clear_timeout(timeout);
+                                if encounted_new_node {
+                                    self.continue_bootstrap(event_loop);
+                                } else {
+                                    self.continue_health_check(event_loop);
+                                    self.continue_refresh(event_loop)
+                                }
                             }
-                            Some(TableAction::HealthCheck(timeout)) => {
-                                event_loop.clear_timeout(timeout);
+                            Some(TableAction::HealthCheck(_)) => {
+                            },
+                            Some(TableAction::RefreshBucket(_)) => {
                             }
                             None => { }
                         }
 
                         match self.status {
                             Status::Bootstrapping => {
-                                if encounted_new_node {
-                                    // Continue botstrapping
-                                    self.continue_bootstrap(event_loop);
-                                } else {
-                                    self.status = Status::Idle;
-                                    self.continue_health_check(event_loop);
-                                }
+                                self.status = Status::Idle;
                             }
                             _ => { }
                         }
@@ -159,8 +166,9 @@ impl Network {
         self.continue_bootstrap(event_loop);
     }
 
-        let transaction_id = self.find_self();
     fn continue_bootstrap(&mut self, event_loop: &mut mio::EventLoop<Handler>) {
+        let address = &self.self_node.get_address();
+        let transaction_id = self.find_node(address);
         let timeout = event_loop.timeout_ms(ScheduledTask::ContinueBootstrap, 1000).unwrap();
         self.pending_actions.insert(transaction_id, TableAction::Bootstrap(timeout));
     }
@@ -171,15 +179,26 @@ impl Network {
         self.pending_actions.insert(transaction_id, TableAction::HealthCheck(timeout));
     }
 
-    fn find_self(&mut self) -> TransactionId {
+    fn continue_refresh(&mut self, event_loop: &mut mio::EventLoop<Handler>) {
+        let timeout = event_loop.timeout_ms(ScheduledTask::ContinueRefresh, 1000).unwrap();
+
+        match self.refresh_bucket() {
+            Some(transaction_id) => {
+                self.pending_actions.insert(transaction_id, TableAction::RefreshBucket(timeout));
+            }
+            None => { }
+        }
+    }
+
+    fn find_node(&mut self, address: &Address) -> TransactionId {
         let transaction_id = self.transaction_ids.generate();
         let query = outgoing::create_find_node_query(
             transaction_id,
             &self.self_node,
-            self.self_node.get_address());
-        if let Some(node) = self.routing_table.nearest().get_mut(0) {
+            address);
+        for node in self.routing_table.nearest() {
             {
-                node.send(query);
+                node.send(query.clone());
             }
             node.sent_query(transaction_id);
         }
@@ -196,6 +215,30 @@ impl Network {
         }
         transaction_id
     }
+
+    fn refresh_bucket(&mut self) -> Option<TransactionId> {
+        if let Some(address) = self.address_to_find_for_refresh() {
+            Some(self.find_node(&address))
+        } else {
+            None
+        }
+    }
+
+    fn address_to_find_for_refresh(&self) -> Option<Address> {
+        match self.routing_table.bucket_needing_refresh() {
+            Some(bucket) => {
+                println!("refreshing {:?}", bucket);
+                Some(bucket.random_address_in_space())
+            }
+            None => None
+        }
+    }
+
+    fn insert_node(&mut self, node: Box<Node>) -> InsertionResult {
+        self.routing_table.insert(node, &self.self_node, &mut self.transaction_ids)
+    }
+}
+
 struct Handler {
     network: Network
 }

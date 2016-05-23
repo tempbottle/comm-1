@@ -3,6 +3,7 @@ use messages;
 use std::fmt::Debug;
 use std::net::{SocketAddr, ToSocketAddrs, UdpSocket, IpAddr, Ipv4Addr};
 use std::collections::HashMap;
+use std::cmp;
 use time;
 use transaction::TransactionId;
 
@@ -30,6 +31,7 @@ pub enum Status {
 
 pub trait Node : Addressable + Debug + Serialize + Send + Sync {
     fn is_questionable(&self) -> bool;
+    fn last_seen(&self) -> time::Tm;
     fn received_query(&mut self, transaction_id: TransactionId);
     fn received_response(&mut self, transaction_id: TransactionId);
     fn send(&self, message: Vec<u8>);
@@ -48,7 +50,8 @@ pub struct UdpNode {
     socket_address: SocketAddr,
     pending_queries: HashMap<TransactionId, time::Tm>,
     has_ever_responded: bool,
-    last_seen: time::Tm,
+    last_received_query: time::Tm,
+    last_received_response: time::Tm,
 }
 
 impl UdpNode {
@@ -63,12 +66,13 @@ impl UdpNode {
             socket_address: socket_address,
             pending_queries: HashMap::new(),
             has_ever_responded: false,
-            last_seen: time::empty_tm(),
+            last_received_query: time::empty_tm(),
+            last_received_response: time::empty_tm()
         }
     }
 
     fn status(&self) -> Status {
-        let time_since_last_seen = time::now_utc() - self.last_seen;
+        let time_since_last_seen = time::now_utc() - self.last_seen();
 
         if self.has_ever_responded &&
             time_since_last_seen < time::Duration::minutes(MINUTES_UNTIL_QUESTIONABLE) {
@@ -86,16 +90,20 @@ impl Node for UdpNode {
         self.status() == Status::Questionable
     }
 
+    fn last_seen(&self) -> time::Tm {
+        cmp::max(self.last_received_query, self.last_received_response)
+    }
+
     fn received_query(&mut self, _: TransactionId) {
-        self.last_seen = time::now_utc();
+        self.last_received_query = time::now_utc();
     }
 
     fn received_response(&mut self, transaction_id: TransactionId) {
-        self.last_seen = time::now_utc();
-        if let Some(queried_at) = self.pending_queries.remove(&transaction_id) {
+        self.last_received_response = time::now_utc();
+        if let Some(_queried_at) = self.pending_queries.remove(&transaction_id) {
             self.has_ever_responded = true;
-            let time_to_respond = time::now_utc() - queried_at;
-            println!("{} took {:?} to respond", transaction_id, time_to_respond);
+            //let time_to_respond = time::now_utc() - queried_at;
+            //println!("{} took {:?} to respond", transaction_id, time_to_respond);
         } else {
             println!("{:?} was not expecting response to {}", self.address, transaction_id);
             println!("pending queries: {:?}", self.pending_queries.len());
@@ -150,11 +158,11 @@ mod tests {
         assert!(!node.has_ever_responded);
 
         // When it's expecting the response
-        let last_seen_before = node.last_seen;
+        let last_seen_before = node.last_seen();
         let transaction_id = 2;
         node.sent_query(transaction_id);
         node.received_response(transaction_id);
-        let last_seen_after = node.last_seen;
+        let last_seen_after = node.last_seen();
         assert!(last_seen_before < last_seen_after);
         assert!(node.has_ever_responded);
     }
@@ -162,7 +170,6 @@ mod tests {
     #[test]
     fn test_serialize() {
         use messages;
-        use protobuf::Message;
         let mut protobuf = messages::protobufs::Node::new();
         protobuf.set_id("8b45e4bd1c6acb88bebf6407d16205f567e62a3e".to_string());
         protobuf.set_ip_address(vec![192, 168, 1, 2]);

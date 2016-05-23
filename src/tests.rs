@@ -1,16 +1,21 @@
 use address::{Address, Addressable};
-use node::{Node, Serialize};
-use transaction::TransactionId;
 use messages;
+use node::{Node, Serialize};
+use time;
+use transaction::TransactionId;
 
 #[derive(Debug)]
 pub struct TestNode {
-    pub address: Address
+    pub address: Address,
+    last_seen: time::Tm
 }
 
 impl TestNode {
     pub fn new(address: Address) -> TestNode {
-        TestNode { address: address }
+        TestNode {
+            address: address,
+            last_seen: time::empty_tm()
+        }
     }
 }
 
@@ -21,11 +26,20 @@ impl Addressable for TestNode {
 }
 
 impl Node for TestNode {
+
     fn is_questionable(&self) -> bool { false }
 
-    fn received_query(&mut self, _: TransactionId) { }
+    fn last_seen(&self) -> time::Tm {
+        self.last_seen
+    }
 
-    fn received_response(&mut self, _: TransactionId) { }
+    fn received_query(&mut self, _: TransactionId) {
+        self.last_seen = time::now_utc();
+    }
+
+    fn received_response(&mut self, _: TransactionId) {
+        self.last_seen = time::now_utc();
+    }
 
     fn send(&self, _: Vec<u8>) { }
 
