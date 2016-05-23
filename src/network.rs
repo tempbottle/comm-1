@@ -29,7 +29,7 @@ enum Status {
     Idle
 }
 
-pub struct Handler {
+pub struct Network {
     port: u16,
     routing_table: RoutingTable,
     self_node: Box<node::Node + 'static>,
@@ -38,12 +38,12 @@ pub struct Handler {
     pending_actions: HashMap<TransactionId, TableAction>
 }
 
-impl Handler {
-    pub fn new<N: node::Node + 'static>(self_node: N, port: u16, routers: Vec<Box<Node>>) -> Handler {
-        let self_address = self_node.get_address();
+impl Network {
+    pub fn new<N: node::Node + 'static>(self_node: N, port: u16, routers: Vec<Box<Node>>) -> Network {
+        let self_address = self_node.get_address().clone();
         let routing_table = routing_table::RoutingTable::new(8, self_address, routers);
 
-        Handler {
+        Network {
             port: port,
             routing_table: routing_table,
             self_node: Box::new(self_node),
@@ -53,13 +53,14 @@ impl Handler {
         }
     }
 
-    pub fn run(mut self) {
         let mut event_loop = mio::EventLoop::new().unwrap();
+    pub fn run(self) {
         let loop_channel = event_loop.channel();
 
         create_incoming_udp_channel(self.port, loop_channel.clone());
         loop_channel.send(OneshotTask::StartBootstrap).unwrap();
-        event_loop.run(&mut self).unwrap();
+        let mut handler = Handler::new(self);
+        event_loop.run(&mut handler).unwrap();
     }
 
     fn handle_incoming(&mut self, data: Vec<u8>, event_loop: &mut mio::EventLoop<Handler>) {
@@ -153,18 +154,18 @@ impl Handler {
         }
     }
 
-    fn start_bootstrap(&mut self, event_loop: &mut mio::EventLoop<Self>) {
+    fn start_bootstrap(&mut self, event_loop: &mut mio::EventLoop<Handler>) {
         self.status = Status::Bootstrapping;
         self.continue_bootstrap(event_loop);
     }
 
-    fn continue_bootstrap(&mut self, event_loop: &mut mio::EventLoop<Self>) {
         let transaction_id = self.find_self();
+    fn continue_bootstrap(&mut self, event_loop: &mut mio::EventLoop<Handler>) {
         let timeout = event_loop.timeout_ms(ScheduledTask::ContinueBootstrap, 1000).unwrap();
         self.pending_actions.insert(transaction_id, TableAction::Bootstrap(timeout));
     }
 
-    fn continue_health_check(&mut self, event_loop: &mut mio::EventLoop<Self>) {
+    fn continue_health_check(&mut self, event_loop: &mut mio::EventLoop<Handler>) {
         let transaction_id = self.health_check();
         let timeout = event_loop.timeout_ms(ScheduledTask::ContinueHealthCheck, 1000).unwrap();
         self.pending_actions.insert(transaction_id, TableAction::HealthCheck(timeout));
@@ -195,6 +196,16 @@ impl Handler {
         }
         transaction_id
     }
+struct Handler {
+    network: Network
+}
+
+impl Handler {
+    fn new(network: Network) -> Handler {
+        Handler {
+            network: network
+        }
+    }
 }
 
 impl mio::Handler for Handler {
@@ -203,15 +214,16 @@ impl mio::Handler for Handler {
 
     fn notify(&mut self, event_loop: &mut mio::EventLoop<Handler>, task: OneshotTask) {
         match task {
-            OneshotTask::Incoming(data) => self.handle_incoming(data, event_loop),
-            OneshotTask::StartBootstrap => self.start_bootstrap(event_loop)
+            OneshotTask::Incoming(data) => self.network.handle_incoming(data, event_loop),
+            OneshotTask::StartBootstrap => self.network.start_bootstrap(event_loop)
         }
     }
 
     fn timeout(&mut self, event_loop: &mut mio::EventLoop<Handler>, timeout: ScheduledTask) {
         match timeout {
-            ScheduledTask::ContinueBootstrap => self.continue_bootstrap(event_loop),
-            ScheduledTask::ContinueHealthCheck => self.continue_health_check(event_loop)
+            ScheduledTask::ContinueBootstrap => self.network.continue_bootstrap(event_loop),
+            ScheduledTask::ContinueHealthCheck => self.network.continue_health_check(event_loop),
+            ScheduledTask::ContinueRefresh => self.network.continue_refresh(event_loop)
         }
     }
 }
