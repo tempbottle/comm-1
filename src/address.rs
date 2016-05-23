@@ -5,9 +5,20 @@ use std::fmt;
 
 pub const LENGTH: usize = 160;
 
+fn compact_bytes(data: &[u8]) -> [u32; 5] {
+    let mut compacted = [0; 5];
+    for (compact, bytes) in compacted.iter_mut().zip(data.chunks(4).rev()) {
+        *compact = bytes.iter()
+            .rev()
+            .enumerate()
+            .fold(0u32, |sum, (i, &b)| sum + ((b as u32) << (8 * i)));
+    }
+    compacted
+}
+
 #[derive(Clone,Copy,Eq,Hash,PartialEq)]
 pub struct Address {
-    data: [u8; 20]
+    data: [u32; 5]
 }
 
 impl Address {
@@ -17,18 +28,14 @@ impl Address {
         let mut data = [0; 20];
         hasher.result(&mut data);
         Address {
-            data: data
+            data: compact_bytes(&data)
         }
     }
 
     pub fn from_numeric(numeric: num::BigUint) -> Address {
-        let bytes = numeric.to_bytes_be();
-        let mut data = [0; 20];
-        for (place, byte) in data.iter_mut().rev().zip(bytes.iter().rev()).rev() {
-            *place = *byte
-        }
+        let data = numeric.to_bytes_be();
         Address {
-            data: data
+            data: compact_bytes(data.as_slice())
         }
     }
 
@@ -40,13 +47,14 @@ impl Address {
             *place = *byte;
         }
         Address {
-            data: data
+            data: compact_bytes(&data)
         }
     }
 
     pub fn null() -> Address {
-        let data = [0; 20];
-        Address { data: data }
+        Address {
+            data: [0; 5]
+        }
     }
 
     pub fn random(min: &num::BigUint, max: &num::BigUint) -> Address {
@@ -59,8 +67,7 @@ impl Address {
     }
 
     pub fn as_numeric(&self) -> num::BigUint {
-        // TODO: Expensive
-        num::BigUint::from_bytes_be(&self.data)
+        num::BigUint::new(self.data.to_vec())
     }
 
     pub fn distance_from(&self, other: &Self) -> num::BigUint {
@@ -69,8 +76,7 @@ impl Address {
     }
 
     pub fn to_str(&self) -> String {
-        use rustc_serialize::hex::ToHex;
-        self.data.to_hex()
+        format!("{:040x}", self.as_numeric())
     }
 }
 
