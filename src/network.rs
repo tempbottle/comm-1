@@ -1,10 +1,8 @@
 use address::Address;
 use messages::outgoing;
 use mio;
-use node::Node;
 use node;
 use routing_table::{InsertOutcome, InsertionResult, RoutingTable};
-use routing_table;
 use std::collections::HashMap;
 use std::io::Cursor;
 use std::thread;
@@ -42,9 +40,9 @@ pub struct Network {
 }
 
 impl Network {
-    pub fn new<N: node::Node + 'static>(self_node: N, port: u16, routers: Vec<Box<Node>>) -> Network {
+    pub fn new<N: node::Node + 'static>(self_node: N, port: u16, routers: Vec<Box<node::Node>>) -> Network {
         let self_address = self_node.get_address().clone();
-        let routing_table = routing_table::RoutingTable::new(8, self_address, routers);
+        let routing_table = RoutingTable::new(8, self_address, routers);
 
         Network {
             port: port,
@@ -69,8 +67,7 @@ impl Network {
     }
 
     fn handle_incoming(&mut self, data: Vec<u8>, event_loop: &mut mio::EventLoop<Handler>) {
-        use messages::incoming;
-        use messages::incoming::*;
+        use messages::incoming::{Message, Query, Response, self};
         let mut data = Cursor::new(data);
         let message = incoming::parse_from_reader(&mut data).unwrap();
 
@@ -234,7 +231,7 @@ impl Network {
         }
     }
 
-    fn insert_node(&mut self, node: Box<Node>) -> InsertionResult {
+    fn insert_node(&mut self, node: Box<node::Node>) -> InsertionResult {
         self.routing_table.insert(node, &self.self_node, &mut self.transaction_ids)
     }
 }
