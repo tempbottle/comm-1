@@ -90,6 +90,12 @@ impl fmt::Debug for Address {
     }
 }
 
+impl fmt::Display for Address {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "[{}]", self.to_str())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use num;
