@@ -46,5 +46,6 @@ fn main() {
 
         let network = network::Network::new(self_node, port, routers);
         network.run();
+        loop { thread::park(); }
     }
 }

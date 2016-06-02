@@ -26,6 +26,15 @@ message PingResponse {
     required Node origin = 1; // Responding node
 }
 
+message PacketQuery {
+    required Node origin = 1;
+    required string payload = 2;
+}
+
+message PacketResponse {
+    required Node origin = 1;
+}
+
 // Wrapper
 
 message Envelope {
@@ -34,6 +43,8 @@ message Envelope {
         FIND_NODE_RESPONSE = 2;
         PING_QUERY = 3;
         PING_RESPONSE = 4;
+        PACKET_QUERY = 5;
+        PACKET_RESPONSE = 6;
     }
     required Type message_type = 1;
     required uint32 transaction_id = 2;
@@ -43,4 +54,6 @@ message Envelope {
     optional FindNodeResponse find_node_response = 4;
     optional PingQuery ping_query = 5;
     optional PingResponse ping_response = 6;
+    optional PacketQuery packet_query = 7;
+    optional PacketResponse packet_response = 8;
 }

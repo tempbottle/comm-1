@@ -5,6 +5,7 @@ use node;
 use routing_table::{InsertOutcome, InsertionResult, RoutingTable};
 use std::collections::HashMap;
 use std::io::Cursor;
+use std::sync::mpsc;
 use std::thread;
 use transaction::{TransactionId, TransactionIdGenerator};
 
@@ -14,9 +15,15 @@ pub enum ScheduledTask {
     ContinueRefresh
 }
 
+#[derive(Debug)]
+pub enum Event {
+    ReceivedPacket(String)
+}
+
 pub enum OneshotTask {
     Incoming(Vec<u8>),
-    StartBootstrap
+    StartBootstrap,
+    SendPacket(Address, String)
 }
 
 enum TableAction {
@@ -24,6 +31,8 @@ enum TableAction {
     HealthCheck(mio::Timeout),
     RefreshBucket(mio::Timeout)
 }
+
+pub type TaskSender = mio::Sender<OneshotTask>;
 
 enum Status {
     Bootstrapping,
@@ -36,7 +45,8 @@ pub struct Network {
     self_node: Box<node::Node + 'static>,
     transaction_ids: TransactionIdGenerator,
     status: Status,
-    pending_actions: HashMap<TransactionId, TableAction>
+    pending_actions: HashMap<TransactionId, TableAction>,
+    event_listeners: Vec<mpsc::Sender<Event>>
 }
 
 impl Network {
@@ -50,20 +60,26 @@ impl Network {
             self_node: Box::new(self_node),
             transaction_ids: TransactionIdGenerator::new(),
             status: Status::Idle,
-            pending_actions: HashMap::new()
+            pending_actions: HashMap::new(),
+            event_listeners: vec![]
         }
     }
 
-    pub fn run(self) {
+    pub fn run(self) -> TaskSender {
         let mut event_loop_config = mio::EventLoopConfig::new();
         event_loop_config.notify_capacity(16384);
         let mut event_loop = mio::EventLoop::configured(event_loop_config).unwrap();
-        let loop_channel = event_loop.channel();
 
-        create_incoming_udp_channel(self.port, loop_channel.clone());
-        loop_channel.send(OneshotTask::StartBootstrap).unwrap();
+        create_incoming_udp_channel(self.port, event_loop.channel());
+        event_loop.channel().send(OneshotTask::StartBootstrap).unwrap();
         let mut handler = Handler::new(self);
-        event_loop.run(&mut handler).unwrap();
+        let task_sender = event_loop.channel();
+        thread::spawn(move|| event_loop.run(&mut handler).unwrap());
+        task_sender
+    }
+
+    pub fn register_event_listener(&mut self, event_listener: mpsc::Sender<Event>) {
+        self.event_listeners.push(event_listener);
     }
 
     fn handle_incoming(&mut self, data: Vec<u8>, event_loop: &mut mio::EventLoop<Handler>) {
@@ -88,6 +104,14 @@ impl Network {
                                 origin.received_query(transaction_id);
                             }
                         }
+                    },
+                    Query::Packet(payload) => {
+                        for listener in &self.event_listeners {
+                            listener.send(Event::ReceivedPacket(payload.clone()));
+                        }
+                        let response = outgoing::create_packet_response(
+                            transaction_id, &self.self_node);
+                        origin.send(response);
                     },
                     Query::Ping => {
                         let response = outgoing::create_ping_response(
@@ -148,6 +172,12 @@ impl Network {
                             }
                             _ => { }
                         }
+                    }
+                    Response::Packet => {
+                        let mut origin = self.routing_table
+                            .find_node(&origin_address)
+                            .expect("Got packet response from unknown node");
+                        origin.received_response(transaction_id);
                     }
                     Response::Ping => {
                         let mut origin = self.routing_table.find_node(&origin_address).expect("Got ping response from unknown node");
@@ -234,6 +264,16 @@ impl Network {
     fn insert_node(&mut self, node: Box<node::Node>) -> InsertionResult {
         self.routing_table.insert(node, &self.self_node, &mut self.transaction_ids)
     }
+
+    fn send_packet(&mut self, recipient: Address, payload: String, event_loop: &mut mio::EventLoop<Handler>) {
+        for node in self.routing_table.nearest_to(&recipient, false) {
+            let transaction_id = self.transaction_ids.generate();
+            let query = outgoing::create_packet_query(
+                transaction_id, &self.self_node, payload.clone());
+            node.send(query.clone());
+            node.sent_query(transaction_id);
+        }
+    }
 }
 
 struct Handler {
@@ -255,7 +295,10 @@ impl mio::Handler for Handler {
     fn notify(&mut self, event_loop: &mut mio::EventLoop<Handler>, task: OneshotTask) {
         match task {
             OneshotTask::Incoming(data) => self.network.handle_incoming(data, event_loop),
-            OneshotTask::StartBootstrap => self.network.start_bootstrap(event_loop)
+            OneshotTask::StartBootstrap => self.network.start_bootstrap(event_loop),
+            OneshotTask::SendPacket(recipient, payload) => {
+                self.network.send_packet(recipient, payload, event_loop);
+            }
         }
     }
 
@@ -268,7 +311,7 @@ impl mio::Handler for Handler {
     }
 }
 
-fn create_incoming_udp_channel(port: u16, sender: mio::Sender<OneshotTask>) {
+fn create_incoming_udp_channel(port: u16, sender: TaskSender) {
     use std::net::UdpSocket;
     thread::spawn(move || {
         let address = ("0.0.0.0", port);

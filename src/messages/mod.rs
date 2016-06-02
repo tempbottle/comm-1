@@ -12,12 +12,14 @@ pub mod incoming {
     #[derive(Debug)]
     pub enum Query {
         FindNode(Address),
+        Packet(String),
         Ping
     }
 
     #[derive(Debug)]
     pub enum Response {
         FindNode(Vec<Box<Node>>),
+        Packet,
         Ping
     }
 
@@ -57,6 +59,17 @@ pub mod incoming {
                         let ping_response = message.get_ping_response();
                         let origin = node::deserialize(ping_response.get_origin());
                         Ok(Message::Response(transaction_id, origin, Response::Ping))
+                    },
+                    protobufs::Envelope_Type::PACKET_QUERY => {
+                        let packet_query = message.get_packet_query();
+                        let origin = node::deserialize(packet_query.get_origin());
+                        let payload = packet_query.get_payload();
+                        Ok(Message::Query(transaction_id, origin, Query::Packet(payload.to_string())))
+                    },
+                    protobufs::Envelope_Type::PACKET_RESPONSE => {
+                        let response = message.get_packet_response();
+                        let origin = node::deserialize(response.get_origin());
+                        Ok(Message::Response(transaction_id, origin, Response::Packet))
                     }
                 }
             }
@@ -119,4 +132,26 @@ pub mod outgoing {
         envelope.set_ping_response(response);
         envelope.write_to_bytes().unwrap()
     }
+
+    pub fn create_packet_query(transaction_id: TransactionId, origin: &Box<Node>, payload: String) -> Vec<u8> {
+        let mut envelope = protobufs::Envelope::new();
+        envelope.set_transaction_id(transaction_id);
+        envelope.set_message_type(protobufs::Envelope_Type::PACKET_QUERY);
+        let mut query = protobufs::PacketQuery::new();
+        query.set_origin(origin.serialize());
+        query.set_payload(payload);
+        envelope.set_packet_query(query);
+        envelope.write_to_bytes().unwrap()
+    }
+
+    pub fn create_packet_response(transaction_id: TransactionId, origin: &Box<Node>) -> Vec<u8> {
+        let mut envelope = protobufs::Envelope::new();
+        envelope.set_transaction_id(transaction_id);
+        envelope.set_message_type(protobufs::Envelope_Type::PACKET_RESPONSE);
+        let mut response = protobufs::PacketResponse::new();
+        response.set_origin(origin.serialize());
+        envelope.set_packet_response(response);
+        envelope.write_to_bytes().unwrap()
+    }
+
 }

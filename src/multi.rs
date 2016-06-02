@@ -28,7 +28,7 @@ pub fn start_multiple(port_start: u16, port_end: u16, router_port: Option<u16>) 
         let socket_address = ("127.0.0.1", port);
         let self_node = node::UdpNode::new(address, socket_address);
         let network = network::Network::new(self_node, port, routers);
-        thread::spawn(move|| network.run());
+        network.run();
         thread::sleep(std::time::Duration::from_millis(200));
     }
 
