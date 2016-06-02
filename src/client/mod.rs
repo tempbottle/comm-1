@@ -81,7 +81,7 @@ impl Client {
             io::stdin().read_line(&mut line).unwrap();
             let parts: Vec<&str> = line.splitn(2, ' ').collect();
             let recipient = Address::from_str(parts[0]);
-            let message_text = parts[1].to_string();
+            let message_text = parts[1].trim().to_string();
 
             let message = CommMessage::new(recipient, sender, message_text);
 
