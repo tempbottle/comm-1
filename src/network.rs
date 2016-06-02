@@ -226,9 +226,7 @@ impl Network {
             &self.self_node,
             address);
         for node in self.routing_table.nearest() {
-            {
-                node.send(query.clone());
-            }
+            node.send(query.clone());
             node.sent_query(transaction_id);
         }
         transaction_id
