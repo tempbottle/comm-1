@@ -180,7 +180,9 @@ impl Network {
                         origin.received_response(transaction_id);
                     }
                     Response::Ping => {
-                        let mut origin = self.routing_table.find_node(&origin_address).expect("Got ping response from unknown node");
+                        let mut origin = self.routing_table
+                            .find_node(&origin_address)
+                            .expect("Got ping response from unknown node");
                         origin.received_response(transaction_id);
                     }
                 }
