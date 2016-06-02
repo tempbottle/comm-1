@@ -28,7 +28,7 @@ message PingResponse {
 
 message PacketQuery {
     required Node origin = 1;
-    required string payload = 2;
+    required bytes payload = 2;
 }
 
 message PacketResponse {

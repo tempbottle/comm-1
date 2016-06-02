@@ -12,7 +12,7 @@ pub mod incoming {
     #[derive(Debug)]
     pub enum Query {
         FindNode(Address),
-        Packet(String),
+        Packet(Vec<u8>),
         Ping
     }
 
@@ -64,7 +64,7 @@ pub mod incoming {
                         let packet_query = message.get_packet_query();
                         let origin = node::deserialize(packet_query.get_origin());
                         let payload = packet_query.get_payload();
-                        Ok(Message::Query(transaction_id, origin, Query::Packet(payload.to_string())))
+                        Ok(Message::Query(transaction_id, origin, Query::Packet(payload.to_vec())))
                     },
                     protobufs::Envelope_Type::PACKET_RESPONSE => {
                         let response = message.get_packet_response();
@@ -133,7 +133,7 @@ pub mod outgoing {
         envelope.write_to_bytes().unwrap()
     }
 
-    pub fn create_packet_query(transaction_id: TransactionId, origin: &Box<Node>, payload: String) -> Vec<u8> {
+    pub fn create_packet_query(transaction_id: TransactionId, origin: &Box<Node>, payload: Vec<u8>) -> Vec<u8> {
         let mut envelope = protobufs::Envelope::new();
         envelope.set_transaction_id(transaction_id);
         envelope.set_message_type(protobufs::Envelope_Type::PACKET_QUERY);

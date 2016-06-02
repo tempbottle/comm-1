@@ -17,13 +17,13 @@ pub enum ScheduledTask {
 
 #[derive(Debug)]
 pub enum Event {
-    ReceivedPacket(String)
+    ReceivedPacket(Vec<u8>)
 }
 
 pub enum OneshotTask {
     Incoming(Vec<u8>),
     StartBootstrap,
-    SendPacket(Address, String)
+    SendPacket(Address, Vec<u8>)
 }
 
 enum TableAction {
@@ -107,7 +107,7 @@ impl Network {
                     },
                     Query::Packet(payload) => {
                         for listener in &self.event_listeners {
-                            listener.send(Event::ReceivedPacket(payload.clone()));
+                            listener.send(Event::ReceivedPacket(payload.clone())).unwrap();
                         }
                         let response = outgoing::create_packet_response(
                             transaction_id, &self.self_node);
@@ -264,7 +264,7 @@ impl Network {
         self.routing_table.insert(node, &self.self_node, &mut self.transaction_ids)
     }
 
-    fn send_packet(&mut self, recipient: Address, payload: String, event_loop: &mut mio::EventLoop<Handler>) {
+    fn send_packet(&mut self, recipient: Address, payload: Vec<u8>, event_loop: &mut mio::EventLoop<Handler>) {
         for node in self.routing_table.nearest_to(&recipient, false) {
             let transaction_id = self.transaction_ids.generate();
             let query = outgoing::create_packet_query(
