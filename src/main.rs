@@ -11,6 +11,7 @@ use node::UdpNode;
 use std::env;
 
 mod address;
+mod client;
 mod messages;
 mod network;
 mod node;
@@ -45,7 +46,7 @@ fn main() {
         };
 
         let network = network::Network::new(self_node, port, routers);
-        network.run();
-        loop { thread::park(); }
+        let client = client::Client::new(address);
+        client.run(network)
     }
 }
