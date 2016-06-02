@@ -254,7 +254,6 @@ impl Network {
     fn address_to_find_for_refresh(&self) -> Option<Address> {
         match self.routing_table.bucket_needing_refresh() {
             Some(bucket) => {
-                println!("refreshing {:?}", bucket);
                 Some(bucket.random_address_in_space())
             }
             None => None
