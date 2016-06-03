@@ -314,6 +314,7 @@ impl mio::Handler for Handler {
 
 fn create_incoming_udp_channel(host: SocketAddr, sender: TaskSender) {
     thread::spawn(move || {
+        let host = ("0.0.0.0", host.port());
         let socket = UdpSocket::bind(host).unwrap();
         loop {
             let mut buf = [0; 4096];
