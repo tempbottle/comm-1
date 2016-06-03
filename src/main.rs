@@ -29,12 +29,12 @@ fn main() {
     if secret == "multi" {
         let port_start = args[2].clone().parse::<u16>().unwrap();
         let port_end = args[3].clone().parse::<u16>().unwrap();
-        let router = args.get(4).map(|p| p.clone().parse::<u16>().unwrap());
+        let router = args.get(4).map(|h| h.as_str());
         multi::start_multiple(port_start, port_end, router);
     } else {
         let address = Address::for_content(secret.as_str());
-        let port = args[2].clone().parse::<u16>().unwrap();
-        let self_node = node::UdpNode::new(address, ("127.0.0.1", port));
+        let host = args[2].as_str();
+        let self_node = node::UdpNode::new(address, host);
 
         let routers: Vec<Box<node::Node>> = match args.get(3) {
             Some(router_address) => {
@@ -44,7 +44,7 @@ fn main() {
             None => vec![]
         };
 
-        let network = network::Network::new(self_node, port, routers);
+        let network = network::Network::new(self_node, host, routers);
         let client = client::Client::new(address);
         client.run(network)
     }

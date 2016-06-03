@@ -6,7 +6,7 @@ use num;
 use std::thread;
 use std;
 
-pub fn start_multiple(port_start: u16, port_end: u16, router_port: Option<u16>) {
+pub fn start_multiple(port_start: u16, port_end: u16, router_host: Option<&str>) {
     let min = 0.to_biguint().unwrap();
     let max = num::pow(2.to_biguint().unwrap(), LENGTH);
 
@@ -15,10 +15,9 @@ pub fn start_multiple(port_start: u16, port_end: u16, router_port: Option<u16>) 
     for port in port_start..port_end {
         println!("-> {}", port);
 
-        let routers: Vec<Box<node::Node>> = match router_port {
-            Some(port) => {
-                let router_address = ("127.0.0.1", port);
-                let router_node = Box::new(node::UdpNode::new(Address::null(), router_address));
+        let routers: Vec<Box<node::Node>> = match router_host {
+            Some(host) => {
+                let router_node = Box::new(node::UdpNode::new(Address::null(), host));
                 vec![router_node]
             }
             None => vec![]
@@ -27,7 +26,7 @@ pub fn start_multiple(port_start: u16, port_end: u16, router_port: Option<u16>) 
         let address = Address::random(&min, &max);
         let socket_address = ("127.0.0.1", port);
         let self_node = node::UdpNode::new(address, socket_address);
-        let network = network::Network::new(self_node, port, routers);
+        let network = network::Network::new(self_node, socket_address, routers);
         network.run();
         thread::sleep(std::time::Duration::from_millis(200));
     }

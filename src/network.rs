@@ -5,6 +5,7 @@ use node;
 use routing_table::{InsertOutcome, InsertionResult, RoutingTable};
 use std::collections::HashMap;
 use std::io::Cursor;
+use std::net::{UdpSocket, ToSocketAddrs, SocketAddr};
 use std::sync::mpsc;
 use std::thread;
 use transaction::{TransactionId, TransactionIdGenerator};
@@ -40,7 +41,7 @@ enum Status {
 }
 
 pub struct Network {
-    port: u16,
+    host: SocketAddr,
     routing_table: RoutingTable,
     self_node: Box<node::Node + 'static>,
     transaction_ids: TransactionIdGenerator,
@@ -50,12 +51,13 @@ pub struct Network {
 }
 
 impl Network {
-    pub fn new<N: node::Node + 'static>(self_node: N, port: u16, routers: Vec<Box<node::Node>>) -> Network {
+    pub fn new<N: node::Node + 'static, T: ToSocketAddrs>(self_node: N, host: T, routers: Vec<Box<node::Node>>) -> Network {
+        let host = host.to_socket_addrs().unwrap().next().unwrap();
         let self_address = self_node.get_address().clone();
         let routing_table = RoutingTable::new(8, self_address, routers);
 
         Network {
-            port: port,
+            host: host,
             routing_table: routing_table,
             self_node: Box::new(self_node),
             transaction_ids: TransactionIdGenerator::new(),
@@ -70,7 +72,7 @@ impl Network {
         event_loop_config.notify_capacity(16384);
         let mut event_loop = mio::EventLoop::configured(event_loop_config).unwrap();
 
-        create_incoming_udp_channel(self.port, event_loop.channel());
+        create_incoming_udp_channel(self.host, event_loop.channel());
         event_loop.channel().send(OneshotTask::StartBootstrap).unwrap();
         let mut handler = Handler::new(self);
         let task_sender = event_loop.channel();
@@ -310,11 +312,9 @@ impl mio::Handler for Handler {
     }
 }
 
-fn create_incoming_udp_channel(port: u16, sender: TaskSender) {
-    use std::net::UdpSocket;
+fn create_incoming_udp_channel(host: SocketAddr, sender: TaskSender) {
     thread::spawn(move || {
-        let address = ("0.0.0.0", port);
-        let socket = UdpSocket::bind(address).unwrap();
+        let socket = UdpSocket::bind(host).unwrap();
         loop {
             let mut buf = [0; 4096];
             match socket.recv_from(&mut buf) {
