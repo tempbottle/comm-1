@@ -37,9 +37,8 @@ fn main() {
         let self_node = node::UdpNode::new(address, ("127.0.0.1", port));
 
         let routers: Vec<Box<node::Node>> = match args.get(3) {
-            Some(router_port) => {
-                let router_address = ("127.0.0.1", router_port.clone().parse::<u16>().unwrap());
-                let router_node = Box::new(UdpNode::new(Address::null(), router_address));
+            Some(router_address) => {
+                let router_node = Box::new(UdpNode::new(Address::null(), router_address.as_str()));
                 vec![router_node]
             }
             None => vec![]
