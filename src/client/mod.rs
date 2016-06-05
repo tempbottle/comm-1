@@ -1,61 +1,39 @@
-pub mod protobufs;
+pub mod messages;
 
 use address::Address;
 use mio;
 use network;
+use self::messages::{CommMessage, Message};
+use std::collections::HashSet;
+use std::io;
 use std::sync::mpsc;
 use std::thread;
-use std::io;
-use protobuf::{self, Message};
-
-#[derive(Debug)]
-struct CommMessage {
-    recipient: Address,
-    sender: Address,
-    text: String
-}
-
-impl CommMessage {
-    fn new(recipient: Address, sender: Address, text: String) -> CommMessage {
-        CommMessage {
-            recipient: recipient,
-            sender: sender,
-            text: text
-        }
-    }
-
-    fn decode(data: Vec<u8>) -> CommMessage {
-        use std::io::Cursor;
-        let mut data = Cursor::new(data);
-        let message = protobuf::parse_from_reader::<protobufs::CommMessage>(&mut data).unwrap();
-        CommMessage::new(
-            Address::from_str(message.get_recipient()),
-            Address::from_str(message.get_sender()),
-            message.get_text().to_string())
-    }
-
-    fn encode(self) -> Vec<u8> {
-        let mut message = protobufs::CommMessage::new();
-        message.set_recipient(self.recipient.to_str());
-        message.set_sender(self.sender.to_str());
-        message.set_text(self.text);
-        message.write_to_bytes().unwrap()
-    }
-}
 
 #[derive(Debug)]
 pub enum Task {
-    HandleNetworkEvent(network::Event)
+    HandleNetworkEvent(network::Event),
+    ScheduleMessageDelivery(Address, CommMessage)
+}
+
+#[derive(Debug)]
+pub enum ScheduledTask {
+    DeliverMessage(Address, CommMessage),
 }
 
 pub struct Client {
-    address: Address
+    address: Address,
+    network_commands: Option<network::TaskSender>,
+    received: HashSet<Address>,
+    acknowledged: HashSet<Address>
 }
 
 impl Client {
     pub fn new(address: Address) -> Client {
         Client {
-            address: address
+            address: address,
+            network_commands: None,
+            received: HashSet::new(),
+            acknowledged: HashSet::new()
         }
     }
 
@@ -72,9 +50,10 @@ impl Client {
             }
         });
 
-        thread::spawn(move || event_loop.run(&mut self).unwrap());
+        self.network_commands = Some(network.run());
 
-        let task_sender = network.run();
+        let notify_channel = event_loop.channel();
+        thread::spawn(move || event_loop.run(&mut self).unwrap());
 
         loop {
             let mut line = String::new();
@@ -83,34 +62,70 @@ impl Client {
             let recipient = Address::from_str(parts[0]);
             let message_text = parts[1].trim().to_string();
 
-            let message = CommMessage::new(recipient, sender, message_text);
-
-            task_sender.send(network::OneshotTask::SendPacket(
-                    recipient, message.encode())).unwrap();
+            let message = messages::create_text_message(recipient, sender, message_text);
+            notify_channel.send(Task::ScheduleMessageDelivery(recipient, message)).unwrap();
         }
     }
 
     fn handle_networking_event(&mut self, event: network::Event, event_loop: &mut mio::EventLoop<Client>) {
         match event {
             network::Event::ReceivedPacket(data) => {
-                let message = CommMessage::decode(data);
-                if message.recipient == self.address {
-                    println!("{}: {}", message.sender, message.text);
-                } else {
-                    println!("should forward: {:?}", message);
+                let comm_message = messages::decode(data);
+                let CommMessage { recipient, message } = comm_message.clone();
+                match message {
+                    Message::TextMessage { id, sender, text } => {
+                        if recipient == self.address && !self.received.contains(&id) {
+                            println!("{}: {}", sender, text);
+                            self.received.insert(id);
+                            let ack = messages::create_message_acknowledgement(sender, id);
+                            self.schedule_message_delivery(sender, ack, event_loop);
+                        } else {
+                            if !self.acknowledged.contains(&id) {
+                                self.schedule_message_delivery(recipient, comm_message, event_loop);
+                            }
+                        }
+                    }
+
+                    Message::MessageAcknowledgement { id } => {
+                        if self.acknowledged.insert(id) {
+                            if recipient == self.address {
+                                println!("ack {}", id);
+                            } else {
+                                self.schedule_message_delivery(recipient, comm_message, event_loop);
+                            }
+                        }
+                    }
                 }
             }
+        }
+    }
+
+    fn schedule_message_delivery(&mut self, recipient: Address, message: CommMessage, event_loop: &mut mio::EventLoop<Client>) {
+        event_loop.timeout_ms(ScheduledTask::DeliverMessage(recipient, message), 0).unwrap();
+    }
+
+    fn deliver_message(&mut self, recipient: Address, message: CommMessage) {
+        match self.network_commands {
+            Some(ref c) => c.send(network::OneshotTask::SendPacket(recipient, message.encode())).unwrap(),
+            None => { println!("No network_commands") }
         }
     }
 }
 
 impl mio::Handler for Client {
-    type Timeout = ();
+    type Timeout = ScheduledTask;
     type Message = Task;
 
     fn notify(&mut self, event_loop: &mut mio::EventLoop<Client>, task: Task) {
         match task {
-            Task::HandleNetworkEvent(event) => self.handle_networking_event(event, event_loop)
+            Task::HandleNetworkEvent(event) => self.handle_networking_event(event, event_loop),
+            Task::ScheduleMessageDelivery(recipient, message) => self.schedule_message_delivery(recipient, message, event_loop)
+        }
+    }
+
+    fn timeout(&mut self, _event_loop: &mut mio::EventLoop<Client>, task: ScheduledTask) {
+        match task {
+            ScheduledTask::DeliverMessage(recipient, message) => self.deliver_message(recipient, message)
         }
     }
 }

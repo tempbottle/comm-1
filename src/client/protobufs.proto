@@ -1,5 +1,0 @@
-message CommMessage {
-    required string recipient = 1;
-    required string sender = 2;
-    required string text = 3;
-}

@@ -1,0 +1,21 @@
+message TextMessage {
+    required string id = 1;
+    required string sender = 2;
+    required string text = 3;
+}
+
+message MessageAcknowledgement {
+    required string message_id = 1;
+}
+
+message CommMessage {
+    enum Type {
+        TEXT_MESSAGE = 1;
+        MESSAGE_ACKNOWLEDGEMENT = 2;
+    }
+
+    required Type message_type = 1;
+    required string recipient = 2;
+    optional TextMessage text_message = 3;
+    optional MessageAcknowledgement message_acknowledgement = 4;
+}
