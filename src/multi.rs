@@ -1,4 +1,5 @@
 use address::{Address, LENGTH};
+use client;
 use network;
 use node;
 use num::bigint::ToBigUint;
@@ -27,7 +28,8 @@ pub fn start_multiple(port_start: u16, port_end: u16, router_host: Option<&str>)
         let socket_address = ("127.0.0.1", port);
         let self_node = node::UdpNode::new(address, socket_address);
         let network = network::Network::new(self_node, socket_address, routers);
-        network.run();
+        let client = client::Client::new(address);
+        thread::spawn(move || client.run(network));
         thread::sleep(std::time::Duration::from_millis(200));
     }
 
