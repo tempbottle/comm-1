@@ -7,7 +7,7 @@ use num;
 use std::thread;
 use std;
 
-pub fn start_multiple(port_start: u16, port_end: u16, router_host: Option<&str>) {
+pub fn start_multiple(host: &str, port_start: u16, port_end: u16, router_host: Option<&str>) {
     let min = 0.to_biguint().unwrap();
     let max = num::pow(2.to_biguint().unwrap(), LENGTH);
 
@@ -25,7 +25,7 @@ pub fn start_multiple(port_start: u16, port_end: u16, router_host: Option<&str>)
         };
 
         let address = Address::random(&min, &max);
-        let socket_address = ("127.0.0.1", port);
+        let socket_address = (host, port);
         let self_node = node::UdpNode::new(address, socket_address);
         let network = network::Network::new(self_node, socket_address, routers);
         let client = client::Client::new(address);
