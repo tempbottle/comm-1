@@ -55,6 +55,8 @@ impl Client {
         let notify_channel = event_loop.channel();
         thread::spawn(move || event_loop.run(&mut self).unwrap());
 
+        println!("Running client at {}", sender);
+
         loop {
             let mut line = String::new();
             io::stdin().read_line(&mut line).unwrap();
