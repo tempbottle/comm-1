@@ -41,7 +41,7 @@ impl Client {
         }
     }
 
-    pub fn run(mut self, mut network: network::Network) {
+    pub fn run(mut self, mut network: network::Network, headless: bool) {
         let mut event_loop = mio::EventLoop::new().unwrap();
         let (event_sender, event_receiver) = mpsc::channel();
         network.register_event_listener(event_sender);
@@ -63,17 +63,21 @@ impl Client {
 
         info!("Running client at {}", sender);
 
-        loop {
-            let mut line = String::new();
-            io::stdin().read_line(&mut line).unwrap();
-            let parts: Vec<&str> = line.splitn(2, ' ').collect();
-            let recipient = Address::from_str(parts[0]);
-            let message_text = parts[1].trim().to_string();
+        if headless {
+            loop { thread::park(); }
+        } else {
+            loop {
+                let mut line = String::new();
+                io::stdin().read_line(&mut line).unwrap();
+                let parts: Vec<&str> = line.splitn(2, ' ').collect();
+                let recipient = Address::from_str(parts[0]);
+                let message_text = parts[1].trim().to_string();
 
-            let message = messages::create_text_message(recipient, sender, message_text);
-            notify_channel
-                .send(Task::ScheduleMessageDelivery(recipient, message))
-                .unwrap_or_else(|err| info!("Couldn't schedule message delivery: {:?}", err));
+                let message = messages::create_text_message(recipient, sender, message_text);
+                notify_channel
+                    .send(Task::ScheduleMessageDelivery(recipient, message))
+                    .unwrap_or_else(|err| info!("Couldn't schedule message delivery: {:?}", err));
+            }
         }
     }
 

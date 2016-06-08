@@ -29,7 +29,7 @@ pub fn start_multiple(host: &str, port_start: u16, port_end: u16, router_host: O
         let self_node = node::UdpNode::new(address, socket_address);
         let network = network::Network::new(self_node, socket_address, routers);
         let client = client::Client::new(address);
-        thread::spawn(move || client.run(network));
+        thread::spawn(move || client.run(network, true));
         thread::sleep(std::time::Duration::from_millis(200));
     }
 

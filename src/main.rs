@@ -51,6 +51,6 @@ fn main() {
 
         let network = network::Network::new(self_node, host, routers);
         let client = client::Client::new(address);
-        client.run(network)
+        client.run(network, false)
     }
 }
