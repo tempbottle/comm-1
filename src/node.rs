@@ -103,10 +103,10 @@ impl Node for UdpNode {
         if let Some(_queried_at) = self.pending_queries.remove(&transaction_id) {
             self.has_ever_responded = true;
             //let time_to_respond = time::now_utc() - queried_at;
-            //println!("{} took {:?} to respond", transaction_id, time_to_respond);
+            //debug!("{} took {:?} to respond", transaction_id, time_to_respond);
         } else {
-            println!("{:?} was not expecting response to {}", self.address, transaction_id);
-            println!("pending queries: {:?}", self.pending_queries.len());
+            debug!("{:?} was not expecting response to {}", self.address, transaction_id);
+            debug!("pending queries: {:?}", self.pending_queries.len());
         }
     }
 

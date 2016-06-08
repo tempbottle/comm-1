@@ -1,4 +1,7 @@
+extern crate env_logger;
 extern crate crypto;
+#[macro_use]
+extern crate log;
 extern crate mio;
 extern crate num;
 extern crate protobuf;
@@ -23,6 +26,7 @@ mod transaction;
 mod tests;
 
 fn main() {
+    env_logger::init().unwrap();
     let args: Vec<String> = env::args().collect();
     let secret = args[1].clone();
 

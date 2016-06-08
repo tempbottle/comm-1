@@ -320,7 +320,9 @@ fn create_incoming_udp_channel(host: SocketAddr, sender: TaskSender) {
             let mut buf = [0; 4096];
             match socket.recv_from(&mut buf) {
                 Ok((size, _src)) => {
-                    sender.send(OneshotTask::Incoming(buf[..size].iter().cloned().collect())).unwrap();
+                    sender
+                        .send(OneshotTask::Incoming(buf[..size].iter().cloned().collect()))
+                        .unwrap_or_else(|err| info!("Couldn't handling incoming: {:?}", err));
                 }
                 Err(e) => panic!("Error receiving from server: {}", e)
             }

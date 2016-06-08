@@ -50,7 +50,9 @@ impl Client {
 
         thread::spawn(move|| {
             for event in event_receiver.iter() {
-                notify_channel.send(Task::HandleNetworkEvent(event)).unwrap();
+                notify_channel
+                    .send(Task::HandleNetworkEvent(event))
+                    .unwrap_or_else(|err| info!("Couldn't handle network event: {:?}", err));
             }
         });
 
@@ -59,7 +61,7 @@ impl Client {
         let notify_channel = event_loop.channel();
         thread::spawn(move || event_loop.run(&mut self).unwrap());
 
-        println!("Running client at {}", sender);
+        info!("Running client at {}", sender);
 
         loop {
             let mut line = String::new();
@@ -69,7 +71,9 @@ impl Client {
             let message_text = parts[1].trim().to_string();
 
             let message = messages::create_text_message(recipient, sender, message_text);
-            notify_channel.send(Task::ScheduleMessageDelivery(recipient, message)).unwrap();
+            notify_channel
+                .send(Task::ScheduleMessageDelivery(recipient, message))
+                .unwrap_or_else(|err| info!("Couldn't schedule message delivery: {:?}", err));
         }
     }
 
@@ -101,7 +105,7 @@ impl Client {
                     Message::MessageAcknowledgement { id } => {
                         if let None = self.acknowledgements.insert(id, comm_message.clone()) {
                             if recipient == self.address {
-                                println!("ack {}", id);
+                                debug!("ack {}", id);
                             } else {
                                 self.schedule_message_delivery(recipient, comm_message, event_loop);
                             }
@@ -118,7 +122,7 @@ impl Client {
                 if !self.pending_deliveries.contains_key(&id) {
                     let delivered = self.delivered.entry(id).or_insert(0);
                     let delay = (2u64.pow(*delivered as u32) - 1) * 1000;
-                    println!("Delivery with delay {:?}", delay);
+                    debug!("Delivery with delay {:?}", delay);
                     let timeout = event_loop.timeout_ms(ScheduledTask::DeliverMessage(recipient, message), delay).unwrap();
                     self.pending_deliveries.insert(id, timeout);
                     *delivered += 1;

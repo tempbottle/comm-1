@@ -11,10 +11,10 @@ pub fn start_multiple(host: &str, port_start: u16, port_end: u16, router_host: O
     let min = 0.to_biguint().unwrap();
     let max = num::pow(2.to_biguint().unwrap(), LENGTH);
 
-    println!("Starting nodes {}..{}", port_start, port_end);
+    info!("Starting nodes {}..{}", port_start, port_end);
 
     for port in port_start..port_end {
-        println!("-> {}", port);
+        debug!("-> starting {}", port);
 
         let routers: Vec<Box<node::Node>> = match router_host {
             Some(host) => {
@@ -33,6 +33,6 @@ pub fn start_multiple(host: &str, port_start: u16, port_end: u16, router_host: O
         thread::sleep(std::time::Duration::from_millis(200));
     }
 
-    println!("All running :)");
+    info!("All running :)");
     loop { thread::park(); }
 }
