@@ -145,10 +145,9 @@ impl Network {
                         }
 
                         {
-                            let mut origin = self.routing_table
-                                .find_node(&origin_address)
-                                .expect("Got find node response from unknown node");
-                            origin.received_response(transaction_id);
+                            if let Some(mut origin) = self.routing_table.find_node(&origin_address) {
+                                origin.received_response(transaction_id);
+                            }
                         }
 
                         match self.pending_actions.remove(&transaction_id) {
@@ -176,16 +175,14 @@ impl Network {
                         }
                     }
                     Response::Packet => {
-                        let mut origin = self.routing_table
-                            .find_node(&origin_address)
-                            .expect("Got packet response from unknown node");
-                        origin.received_response(transaction_id);
+                        if let Some(mut origin) = self.routing_table.find_node(&origin_address) {
+                            origin.received_response(transaction_id);
+                        }
                     }
                     Response::Ping => {
-                        let mut origin = self.routing_table
-                            .find_node(&origin_address)
-                            .expect("Got ping response from unknown node");
-                        origin.received_response(transaction_id);
+                        if let Some(mut origin) = self.routing_table.find_node(&origin_address) {
+                            origin.received_response(transaction_id);
+                        }
                     }
                 }
             }
