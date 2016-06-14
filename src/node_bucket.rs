@@ -116,16 +116,15 @@ impl NodeBucket {
         Address::random(&self.min, &self.max)
     }
 
-    pub fn split(&mut self) -> (Self, Self) {
-        let difference = self.max.clone() - self.min.clone();
-        let partition = difference / 2.to_biguint().unwrap() + self.min.clone();
-        let addresses = self.addresses.clone();
-        let (a_addresses, b_addresses): (Vec<Address>, Vec<Address>) = addresses
+    pub fn split(self) -> (Self, Self) {
+        let difference = &self.max - &self.min;
+        let partition = difference / 2.to_biguint().unwrap() + &self.min;
+        let (a_addresses, b_addresses) = self.addresses
             .into_iter()
             .partition(|&a| a.as_numeric() < partition);
         let mut a_nodes = HashMap::new();
         let mut b_nodes = HashMap::new();
-        for (address, node) in self.nodes.drain() {
+        for (address, node) in self.nodes.into_iter() {
             if address.as_numeric() < partition {
                 a_nodes.insert(address, node);
             } else {
@@ -135,7 +134,7 @@ impl NodeBucket {
 
         let a = NodeBucket {
             k: self.k,
-            min: self.min.clone(),
+            min: self.min,
             max: partition.clone(),
             addresses: a_addresses,
             nodes: a_nodes,
@@ -143,8 +142,8 @@ impl NodeBucket {
         };
         let b = NodeBucket {
             k: self.k,
-            min: partition.clone(),
-            max: self.max.clone(),
+            min: partition,
+            max: self.max,
             addresses: b_addresses,
             nodes: b_nodes,
             last_inserted: self.last_inserted
