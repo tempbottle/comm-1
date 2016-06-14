@@ -1,20 +1,38 @@
 use address::{Address, Addressable};
 use messages;
-use node::{Node, Serialize};
+use node::{Node, Serialize, Status};
 use time;
 use transaction::TransactionId;
 
 #[derive(Debug)]
 pub struct TestNode {
     pub address: Address,
-    last_seen: time::Tm
+    last_seen: time::Tm,
+    status: Status
 }
 
 impl TestNode {
     pub fn new(address: Address) -> TestNode {
         TestNode {
             address: address,
-            last_seen: time::empty_tm()
+            last_seen: time::empty_tm(),
+            status: Status::Good
+        }
+    }
+
+    pub  fn  questionable(address: Address) -> TestNode {
+        TestNode {
+            address: address,
+            last_seen: time::empty_tm(),
+            status: Status::Questionable
+        }
+    }
+
+    pub fn bad(address: Address) -> TestNode {
+        TestNode {
+            address: address,
+            last_seen: time::empty_tm(),
+            status: Status::Bad
         }
     }
 }
@@ -26,8 +44,17 @@ impl Addressable for TestNode {
 }
 
 impl Node for TestNode {
+    fn is_bad(&self) -> bool {
+        self.status == Status::Bad
+    }
 
-    fn is_questionable(&self) -> bool { false }
+    fn is_good(&self) -> bool {
+        self.status == Status::Good
+    }
+
+    fn is_questionable(&self) -> bool {
+        self.status == Status::Questionable
+    }
 
     fn last_seen(&self) -> time::Tm {
         self.last_seen

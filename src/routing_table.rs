@@ -123,6 +123,12 @@ impl RoutingTable {
             .collect()
     }
 
+    pub fn remove_bad_nodes(&mut self) {
+        for bucket in self.buckets.iter_mut() {
+            bucket.remove_bad_nodes();
+        }
+    }
+
     fn bucket_for(&self, address: &Address) -> usize {
         let (index, _) = self.buckets
             .iter()
@@ -190,6 +196,26 @@ mod tests {
         let node_12 = Box::new(TestNode::new(self_address));
         assert_eq!(table.insert(node_12, &self_node, &mut transaction_ids).unwrap(), InsertOutcome::Ignored);
         assert_eq!(table.buckets.len(), 3);
+    }
+
+    #[test]
+    fn test_remove_bad_nodes() {
+        let self_address = Address::from_str("0000000000000000000000000000000000000000");
+        let self_node: Box<Node> = Box::new(TestNode::new(self_address));
+        let mut transaction_ids = TransactionIdGenerator::new();
+        let router = Box::new(TestNode::new(Address::null()));
+        let mut table: RoutingTable = RoutingTable::new(8, self_address, vec![router]);
+        let node_1 = Box::new(TestNode::new(Address::from_str("0000000000000000000000000000000000000001")));
+        let node_2 = Box::new(TestNode::new(Address::from_str("0000000000000000000000000000000000000002")));
+        let node_3 = Box::new(TestNode::new(Address::from_str("0000000000000000000000000000000000000003")));
+        let node_4 = Box::new(TestNode::bad(Address::from_str("0000000000000000000000000000000000000004")));
+        table.insert(node_1, &self_node, &mut transaction_ids).unwrap();
+        table.insert(node_2, &self_node, &mut transaction_ids).unwrap();
+        table.insert(node_3, &self_node, &mut transaction_ids).unwrap();
+        table.insert(node_4, &self_node, &mut transaction_ids).unwrap();
+        assert!(table.buckets[0].contains(&Address::from_str("0000000000000000000000000000000000000004")));
+        table.remove_bad_nodes();
+        assert!(!table.buckets[0].contains(&Address::from_str("0000000000000000000000000000000000000004")));
     }
 
     #[test]

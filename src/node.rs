@@ -30,6 +30,8 @@ pub enum Status {
 }
 
 pub trait Node : Addressable + Debug + Serialize + Send + Sync {
+    fn is_bad(&self) -> bool;
+    fn is_good(&self) -> bool;
     fn is_questionable(&self) -> bool;
     fn last_seen(&self) -> time::Tm;
     fn received_query(&mut self, transaction_id: TransactionId);
@@ -86,6 +88,14 @@ impl UdpNode {
 }
 
 impl Node for UdpNode {
+    fn is_bad(&self) -> bool {
+        self.status() == Status::Bad
+    }
+
+    fn is_good(&self) -> bool {
+        self.status() == Status::Good
+    }
+
     fn is_questionable(&self) -> bool {
         self.status() == Status::Questionable
     }

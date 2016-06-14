@@ -116,6 +116,24 @@ impl NodeBucket {
         Address::random(&self.min, &self.max)
     }
 
+    fn remove(&mut self, address: &Address) {
+        self.nodes.remove(address);
+        let pos = self.addresses.iter().position(|a| a == address).unwrap();
+        self.addresses.remove(pos);
+    }
+
+    pub fn remove_bad_nodes(&mut self) {
+        let mut to_remove = vec![];
+        for (address, node) in self.nodes.iter() {
+            if node.is_bad() {
+                to_remove.push(address.clone());
+            }
+        }
+        for address in to_remove {
+            self.remove(&address);
+        }
+    }
+
     pub fn split(self) -> (Self, Self) {
         let difference = &self.max - &self.min;
         let partition = difference / 2.to_biguint().unwrap() + &self.min;
@@ -297,5 +315,20 @@ mod tests {
         bucket.find_node(&addr).unwrap().received_response(1);
         let last_changed_after_received = bucket.last_changed();
         assert!(last_changed_before_received < last_changed_after_received);
+    }
+
+    #[test]
+    fn test_remove_bad_nodes() {
+        let mut bucket: NodeBucket = NodeBucket::new(8);
+        let node_1 = Box::new(TestNode::new(Address::for_content("good node")));
+        let node_2 = Box::new(TestNode::questionable(Address::for_content("questionable node")));
+        let node_3 = Box::new(TestNode::bad(Address::for_content("bad node")));
+        bucket.insert(node_1).unwrap();
+        bucket.insert(node_2).unwrap();
+        bucket.insert(node_3).unwrap();
+        assert_eq!(bucket.addresses.len(), 3);
+
+        bucket.remove_bad_nodes();
+        assert_eq!(bucket.addresses.len(), 2);
     }
 }
