@@ -3,7 +3,7 @@ pub mod messages;
 use address::Address;
 use mio;
 use network;
-use self::messages::{CommMessage, TextMessage, MessageAcknowledgement};
+use self::messages::{CommMessage};
 use std::collections::{HashMap, HashSet};
 use std::io;
 use std::sync::mpsc;
@@ -131,7 +131,7 @@ impl Client {
             }
         }
 
-        if let Some(ref ack) = message.message_acknowledgement {
+        if let Some(_) = message.message_acknowledgement {
             event_loop.timeout_ms(ScheduledTask::DeliverMessage(recipient, message.clone()), 0).unwrap();
         }
     }
