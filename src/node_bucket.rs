@@ -96,7 +96,7 @@ impl NodeBucket {
     }
 
     pub fn is_full(&self) -> bool {
-        self.addresses.len() >= self.k
+        self.nodes.len() >= self.k
     }
 
     pub fn last_changed(&self) -> time::Tm {
