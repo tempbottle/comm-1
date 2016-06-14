@@ -126,6 +126,7 @@ impl NodeBucket {
         let mut to_remove = vec![];
         for (address, node) in self.nodes.iter() {
             if node.is_bad() {
+                debug!("Removing bad node {:?}", node);
                 to_remove.push(address.clone());
             }
         }
