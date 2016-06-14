@@ -136,11 +136,12 @@ impl Client {
         }
     }
 
-    fn deliver_message(&mut self, recipient: Address, message: CommMessage) {
+    fn deliver_message(&mut self, recipient: Address, message: CommMessage, event_loop: &mut mio::EventLoop<Client>) {
+        if let Some(ref text_message) = message.text_message {
+            self.pending_deliveries.remove(&text_message.id);
+            self.schedule_message_delivery(recipient, message.clone(), event_loop);
+        }
         if let Some(ref commands) = self.network_commands {
-            if let Some(ref text_message) = message.text_message {
-                self.pending_deliveries.remove(&text_message.id);
-            }
             commands.send(network::OneshotTask::SendPacket(recipient, message.encode())).unwrap();
         }
     }
@@ -157,9 +158,9 @@ impl mio::Handler for Client {
         }
     }
 
-    fn timeout(&mut self, _event_loop: &mut mio::EventLoop<Client>, task: ScheduledTask) {
+    fn timeout(&mut self, event_loop: &mut mio::EventLoop<Client>, task: ScheduledTask) {
         match task {
-            ScheduledTask::DeliverMessage(recipient, message) => self.deliver_message(recipient, message)
+            ScheduledTask::DeliverMessage(recipient, message) => self.deliver_message(recipient, message, event_loop)
         }
     }
 }
