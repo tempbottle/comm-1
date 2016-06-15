@@ -38,7 +38,7 @@ impl TestNode {
 }
 
 impl Addressable for TestNode {
-    fn get_address(&self) -> Address {
+    fn addresss(&self) -> Address {
         self.address
     }
 }

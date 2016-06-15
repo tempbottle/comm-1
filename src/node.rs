@@ -42,7 +42,7 @@ pub trait Node : Addressable + Debug + Serialize + Send + Sync {
 
 impl PartialEq for Node {
     fn eq(&self, other: &Self) -> bool {
-        self.get_address() == other.get_address()
+        self.addresss() == other.addresss()
     }
 }
 
@@ -148,7 +148,7 @@ impl Serialize for UdpNode {
 }
 
 impl Addressable for UdpNode {
-    fn get_address(&self) -> Address {
+    fn addresss(&self) -> Address {
         self.address
     }
 }

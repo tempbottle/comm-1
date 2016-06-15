@@ -73,7 +73,7 @@ impl NodeBucket {
     }
 
     pub fn insert(&mut self, node: Box<Node>) -> InsertionResult {
-        let address = node.get_address();
+        let address = node.addresss();
         if self.covers(&address) {
             if let Some(pos) = self.addresses.iter().position(|a| a == &address) {
                 // TODO: Should this update the node's socket address incase a device has changed
@@ -201,7 +201,7 @@ mod tests {
         assert_eq!(bucket.insert(c).unwrap(), InsertOutcome::Updated);
 
         assert_eq!(bucket.addresses.len(), 2);
-        assert_eq!(bucket.nodes[&Address::for_content("node 1")].get_address(), addr_1);
+        assert_eq!(bucket.nodes[&Address::for_content("node 1")].addresss(), addr_1);
     }
 
     #[test]
@@ -282,11 +282,11 @@ mod tests {
         assert_eq!(b.addresses.len(), 2);
 
         // Splits up known nodes
-        assert_eq!(a.nodes[&Address::from_str("0000000000000000000000000000000000000000")].get_address(), addr_1);
-        assert_eq!(a.nodes[&Address::from_str("0000000000000000000000000000000000000000")].get_address(), addr_1);
-        assert_eq!(a.nodes[&Address::from_str("7fffffffffffffffffffffffffffffffffffffff")].get_address(), addr_2);
-        assert_eq!(b.nodes[&Address::from_str("8000000000000000000000000000000000000000")].get_address(), addr_3);
-        assert_eq!(b.nodes[&Address::from_str("ffffffffffffffffffffffffffffffffffffffff")].get_address(), addr_4);
+        assert_eq!(a.nodes[&Address::from_str("0000000000000000000000000000000000000000")].addresss(), addr_1);
+        assert_eq!(a.nodes[&Address::from_str("0000000000000000000000000000000000000000")].addresss(), addr_1);
+        assert_eq!(a.nodes[&Address::from_str("7fffffffffffffffffffffffffffffffffffffff")].addresss(), addr_2);
+        assert_eq!(b.nodes[&Address::from_str("8000000000000000000000000000000000000000")].addresss(), addr_3);
+        assert_eq!(b.nodes[&Address::from_str("ffffffffffffffffffffffffffffffffffffffff")].addresss(), addr_4);
 
         // Equitably covers address space
         assert!(a.covers(&Address::from_str("0000000000000000000000000000000000000000")));
