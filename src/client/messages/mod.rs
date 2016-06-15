@@ -10,6 +10,30 @@ pub struct CommMessage {
 }
 
 impl CommMessage {
+    pub fn text_message(recipient: Address, sender: Address, text: String) -> CommMessage {
+        let id = Address::for_content(format!(
+                "{}{}{}", recipient.to_str(), sender.to_str(), text).as_str());
+        CommMessage {
+            recipient: recipient,
+            text_message: Some(TextMessage {
+                id: id,
+                sender: sender,
+                text: text
+            }),
+            message_acknowledgement: None
+        }
+    }
+
+    pub fn message_acknowledgement(recipient: Address, message_id: Address) -> CommMessage {
+        CommMessage {
+            recipient: recipient,
+            text_message: None,
+            message_acknowledgement: Some(MessageAcknowledgement {
+                id: message_id
+            })
+        }
+    }
+
     pub fn encode(self) -> Vec<u8> {
         use protobuf::Message as MessageForFunctions;
         let mut message = protobufs::CommMessage::new();
@@ -75,29 +99,5 @@ pub fn decode(data: Vec<u8>) -> CommMessage {
                 })
             }
         }
-    }
-}
-
-pub fn create_text_message(recipient: Address, sender: Address, text: String) -> CommMessage {
-    let id = Address::for_content(format!(
-            "{}{}{}", recipient.to_str(), sender.to_str(), text).as_str());
-    CommMessage {
-        recipient: recipient,
-        text_message: Some(TextMessage {
-            id: id,
-            sender: sender,
-            text: text
-        }),
-        message_acknowledgement: None
-    }
-}
-
-pub fn create_message_acknowledgement(recipient: Address, message_id: Address) -> CommMessage {
-    CommMessage {
-        recipient: recipient,
-        text_message: None,
-        message_acknowledgement: Some(MessageAcknowledgement {
-            id: message_id
-        })
     }
 }

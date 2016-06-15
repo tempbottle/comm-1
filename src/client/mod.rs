@@ -73,7 +73,7 @@ impl Client {
                 let recipient = Address::from_str(parts[0]);
                 let message_text = parts[1].trim().to_string();
 
-                let message = messages::create_text_message(recipient, sender, message_text);
+                let message = CommMessage::text_message(recipient, sender, message_text);
                 notify_channel
                     .send(Task::ScheduleMessageDelivery(recipient, message))
                     .unwrap_or_else(|err| info!("Couldn't schedule message delivery: {:?}", err));
@@ -92,7 +92,7 @@ impl Client {
                         self.received.insert(text_message.id);
                         if recipient == self.address {
                             println!("{}: {}", text_message.sender, text_message.text);
-                            let ack = messages::create_message_acknowledgement(text_message.sender, text_message.id);
+                            let ack = CommMessage::message_acknowledgement(text_message.sender, text_message.id);
                             self.schedule_message_delivery(text_message.sender, ack, event_loop);
                         } else {
                             if let Some(ack) = self.acknowledgements.remove(&text_message.id) {
