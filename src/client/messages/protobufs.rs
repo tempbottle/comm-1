@@ -1,11 +1,21 @@
 // This file is generated. Do not edit
 // @generated
 
+// https://github.com/Manishearth/rust-clippy/issues/702
+#![allow(unknown_lints)]
+#![allow(clippy)]
+
+#![cfg_attr(rustfmt, rustfmt_skip)]
+
+#![allow(box_pointers)]
 #![allow(dead_code)]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
+#![allow(trivial_casts)]
+#![allow(unsafe_code)]
 #![allow(unused_imports)]
+#![allow(unused_results)]
 
 use protobuf::Message as Message_imported_for_functions;
 use protobuf::ProtobufEnum as ProtobufEnum_imported_for_functions;
@@ -64,7 +74,7 @@ impl TextMessage {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_id<'a>(&'a mut self) -> &'a mut ::std::string::String {
+    pub fn mut_id(&mut self) -> &mut ::std::string::String {
         if self.id.is_none() {
             self.id.set_default();
         };
@@ -76,7 +86,7 @@ impl TextMessage {
         self.id.take().unwrap_or_else(|| ::std::string::String::new())
     }
 
-    pub fn get_id<'a>(&'a self) -> &'a str {
+    pub fn get_id(&self) -> &str {
         match self.id.as_ref() {
             Some(v) => &v,
             None => "",
@@ -100,7 +110,7 @@ impl TextMessage {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_sender<'a>(&'a mut self) -> &'a mut ::std::string::String {
+    pub fn mut_sender(&mut self) -> &mut ::std::string::String {
         if self.sender.is_none() {
             self.sender.set_default();
         };
@@ -112,7 +122,7 @@ impl TextMessage {
         self.sender.take().unwrap_or_else(|| ::std::string::String::new())
     }
 
-    pub fn get_sender<'a>(&'a self) -> &'a str {
+    pub fn get_sender(&self) -> &str {
         match self.sender.as_ref() {
             Some(v) => &v,
             None => "",
@@ -136,7 +146,7 @@ impl TextMessage {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_text<'a>(&'a mut self) -> &'a mut ::std::string::String {
+    pub fn mut_text(&mut self) -> &mut ::std::string::String {
         if self.text.is_none() {
             self.text.set_default();
         };
@@ -148,7 +158,7 @@ impl TextMessage {
         self.text.take().unwrap_or_else(|| ::std::string::String::new())
     }
 
-    pub fn get_text<'a>(&'a self) -> &'a str {
+    pub fn get_text(&self) -> &str {
         match self.text.as_ref() {
             Some(v) => &v,
             None => "",
@@ -227,11 +237,11 @@ impl ::protobuf::Message for TextMessage {
         self.cached_size.get()
     }
 
-    fn get_unknown_fields<'s>(&'s self) -> &'s ::protobuf::UnknownFields {
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
         &self.unknown_fields
     }
 
-    fn mut_unknown_fields<'s>(&'s mut self) -> &'s mut ::protobuf::UnknownFields {
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
         &mut self.unknown_fields
     }
 
@@ -360,7 +370,7 @@ impl MessageAcknowledgement {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_message_id<'a>(&'a mut self) -> &'a mut ::std::string::String {
+    pub fn mut_message_id(&mut self) -> &mut ::std::string::String {
         if self.message_id.is_none() {
             self.message_id.set_default();
         };
@@ -372,7 +382,7 @@ impl MessageAcknowledgement {
         self.message_id.take().unwrap_or_else(|| ::std::string::String::new())
     }
 
-    pub fn get_message_id<'a>(&'a self) -> &'a str {
+    pub fn get_message_id(&self) -> &str {
         match self.message_id.as_ref() {
             Some(v) => &v,
             None => "",
@@ -427,11 +437,11 @@ impl ::protobuf::Message for MessageAcknowledgement {
         self.cached_size.get()
     }
 
-    fn get_unknown_fields<'s>(&'s self) -> &'s ::protobuf::UnknownFields {
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
         &self.unknown_fields
     }
 
-    fn mut_unknown_fields<'s>(&'s mut self) -> &'s mut ::protobuf::UnknownFields {
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
         &mut self.unknown_fields
     }
 
@@ -550,7 +560,7 @@ impl CommMessage {
         self.message_type = ::std::option::Option::Some(v);
     }
 
-    pub fn get_message_type<'a>(&self) -> CommMessage_Type {
+    pub fn get_message_type(&self) -> CommMessage_Type {
         self.message_type.unwrap_or(CommMessage_Type::TEXT_MESSAGE)
     }
 
@@ -571,7 +581,7 @@ impl CommMessage {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_recipient<'a>(&'a mut self) -> &'a mut ::std::string::String {
+    pub fn mut_recipient(&mut self) -> &mut ::std::string::String {
         if self.recipient.is_none() {
             self.recipient.set_default();
         };
@@ -583,7 +593,7 @@ impl CommMessage {
         self.recipient.take().unwrap_or_else(|| ::std::string::String::new())
     }
 
-    pub fn get_recipient<'a>(&'a self) -> &'a str {
+    pub fn get_recipient(&self) -> &str {
         match self.recipient.as_ref() {
             Some(v) => &v,
             None => "",
@@ -607,7 +617,7 @@ impl CommMessage {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_text_message<'a>(&'a mut self) -> &'a mut TextMessage {
+    pub fn mut_text_message(&mut self) -> &mut TextMessage {
         if self.text_message.is_none() {
             self.text_message.set_default();
         };
@@ -619,7 +629,7 @@ impl CommMessage {
         self.text_message.take().unwrap_or_else(|| TextMessage::new())
     }
 
-    pub fn get_text_message<'a>(&'a self) -> &'a TextMessage {
+    pub fn get_text_message(&self) -> &TextMessage {
         self.text_message.as_ref().unwrap_or_else(|| TextMessage::default_instance())
     }
 
@@ -640,7 +650,7 @@ impl CommMessage {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_message_acknowledgement<'a>(&'a mut self) -> &'a mut MessageAcknowledgement {
+    pub fn mut_message_acknowledgement(&mut self) -> &mut MessageAcknowledgement {
         if self.message_acknowledgement.is_none() {
             self.message_acknowledgement.set_default();
         };
@@ -652,7 +662,7 @@ impl CommMessage {
         self.message_acknowledgement.take().unwrap_or_else(|| MessageAcknowledgement::new())
     }
 
-    pub fn get_message_acknowledgement<'a>(&'a self) -> &'a MessageAcknowledgement {
+    pub fn get_message_acknowledgement(&self) -> &MessageAcknowledgement {
         self.message_acknowledgement.as_ref().unwrap_or_else(|| MessageAcknowledgement::default_instance())
     }
 }
@@ -744,11 +754,11 @@ impl ::protobuf::Message for CommMessage {
         self.cached_size.get()
     }
 
-    fn get_unknown_fields<'s>(&'s self) -> &'s ::protobuf::UnknownFields {
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
         &self.unknown_fields
     }
 
-    fn mut_unknown_fields<'s>(&'s mut self) -> &'s mut ::protobuf::UnknownFields {
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
         &mut self.unknown_fields
     }
 

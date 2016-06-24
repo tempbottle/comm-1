@@ -1,11 +1,21 @@
 // This file is generated. Do not edit
 // @generated
 
+// https://github.com/Manishearth/rust-clippy/issues/702
+#![allow(unknown_lints)]
+#![allow(clippy)]
+
+#![cfg_attr(rustfmt, rustfmt_skip)]
+
+#![allow(box_pointers)]
 #![allow(dead_code)]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
+#![allow(trivial_casts)]
+#![allow(unsafe_code)]
 #![allow(unused_imports)]
+#![allow(unused_results)]
 
 use protobuf::Message as Message_imported_for_functions;
 use protobuf::ProtobufEnum as ProtobufEnum_imported_for_functions;
@@ -64,7 +74,7 @@ impl Node {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_id<'a>(&'a mut self) -> &'a mut ::std::string::String {
+    pub fn mut_id(&mut self) -> &mut ::std::string::String {
         if self.id.is_none() {
             self.id.set_default();
         };
@@ -76,7 +86,7 @@ impl Node {
         self.id.take().unwrap_or_else(|| ::std::string::String::new())
     }
 
-    pub fn get_id<'a>(&'a self) -> &'a str {
+    pub fn get_id(&self) -> &str {
         match self.id.as_ref() {
             Some(v) => &v,
             None => "",
@@ -100,7 +110,7 @@ impl Node {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_ip_address<'a>(&'a mut self) -> &'a mut ::std::vec::Vec<u8> {
+    pub fn mut_ip_address(&mut self) -> &mut ::std::vec::Vec<u8> {
         if self.ip_address.is_none() {
             self.ip_address.set_default();
         };
@@ -112,7 +122,7 @@ impl Node {
         self.ip_address.take().unwrap_or_else(|| ::std::vec::Vec::new())
     }
 
-    pub fn get_ip_address<'a>(&'a self) -> &'a [u8] {
+    pub fn get_ip_address(&self) -> &[u8] {
         match self.ip_address.as_ref() {
             Some(v) => &v,
             None => &[],
@@ -134,7 +144,7 @@ impl Node {
         self.port = ::std::option::Option::Some(v);
     }
 
-    pub fn get_port<'a>(&self) -> u32 {
+    pub fn get_port(&self) -> u32 {
         self.port.unwrap_or(0)
     }
 }
@@ -214,11 +224,11 @@ impl ::protobuf::Message for Node {
         self.cached_size.get()
     }
 
-    fn get_unknown_fields<'s>(&'s self) -> &'s ::protobuf::UnknownFields {
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
         &self.unknown_fields
     }
 
-    fn mut_unknown_fields<'s>(&'s mut self) -> &'s mut ::protobuf::UnknownFields {
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
         &mut self.unknown_fields
     }
 
@@ -349,7 +359,7 @@ impl FindNodeQuery {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_origin<'a>(&'a mut self) -> &'a mut Node {
+    pub fn mut_origin(&mut self) -> &mut Node {
         if self.origin.is_none() {
             self.origin.set_default();
         };
@@ -361,7 +371,7 @@ impl FindNodeQuery {
         self.origin.take().unwrap_or_else(|| Node::new())
     }
 
-    pub fn get_origin<'a>(&'a self) -> &'a Node {
+    pub fn get_origin(&self) -> &Node {
         self.origin.as_ref().unwrap_or_else(|| Node::default_instance())
     }
 
@@ -382,7 +392,7 @@ impl FindNodeQuery {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_target<'a>(&'a mut self) -> &'a mut ::std::string::String {
+    pub fn mut_target(&mut self) -> &mut ::std::string::String {
         if self.target.is_none() {
             self.target.set_default();
         };
@@ -394,7 +404,7 @@ impl FindNodeQuery {
         self.target.take().unwrap_or_else(|| ::std::string::String::new())
     }
 
-    pub fn get_target<'a>(&'a self) -> &'a str {
+    pub fn get_target(&self) -> &str {
         match self.target.as_ref() {
             Some(v) => &v,
             None => "",
@@ -464,11 +474,11 @@ impl ::protobuf::Message for FindNodeQuery {
         self.cached_size.get()
     }
 
-    fn get_unknown_fields<'s>(&'s self) -> &'s ::protobuf::UnknownFields {
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
         &self.unknown_fields
     }
 
-    fn mut_unknown_fields<'s>(&'s mut self) -> &'s mut ::protobuf::UnknownFields {
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
         &mut self.unknown_fields
     }
 
@@ -592,7 +602,7 @@ impl FindNodeResponse {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_origin<'a>(&'a mut self) -> &'a mut Node {
+    pub fn mut_origin(&mut self) -> &mut Node {
         if self.origin.is_none() {
             self.origin.set_default();
         };
@@ -604,7 +614,7 @@ impl FindNodeResponse {
         self.origin.take().unwrap_or_else(|| Node::new())
     }
 
-    pub fn get_origin<'a>(&'a self) -> &'a Node {
+    pub fn get_origin(&self) -> &Node {
         self.origin.as_ref().unwrap_or_else(|| Node::default_instance())
     }
 
@@ -620,7 +630,7 @@ impl FindNodeResponse {
     }
 
     // Mutable pointer to the field.
-    pub fn mut_nodes<'a>(&'a mut self) -> &'a mut ::protobuf::RepeatedField<Node> {
+    pub fn mut_nodes(&mut self) -> &mut ::protobuf::RepeatedField<Node> {
         &mut self.nodes
     }
 
@@ -629,7 +639,7 @@ impl FindNodeResponse {
         ::std::mem::replace(&mut self.nodes, ::protobuf::RepeatedField::new())
     }
 
-    pub fn get_nodes<'a>(&'a self) -> &'a [Node] {
+    pub fn get_nodes(&self) -> &[Node] {
         &self.nodes
     }
 }
@@ -696,11 +706,11 @@ impl ::protobuf::Message for FindNodeResponse {
         self.cached_size.get()
     }
 
-    fn get_unknown_fields<'s>(&'s self) -> &'s ::protobuf::UnknownFields {
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
         &self.unknown_fields
     }
 
-    fn mut_unknown_fields<'s>(&'s mut self) -> &'s mut ::protobuf::UnknownFields {
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
         &mut self.unknown_fields
     }
 
@@ -821,7 +831,7 @@ impl PingQuery {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_origin<'a>(&'a mut self) -> &'a mut Node {
+    pub fn mut_origin(&mut self) -> &mut Node {
         if self.origin.is_none() {
             self.origin.set_default();
         };
@@ -833,7 +843,7 @@ impl PingQuery {
         self.origin.take().unwrap_or_else(|| Node::new())
     }
 
-    pub fn get_origin<'a>(&'a self) -> &'a Node {
+    pub fn get_origin(&self) -> &Node {
         self.origin.as_ref().unwrap_or_else(|| Node::default_instance())
     }
 }
@@ -888,11 +898,11 @@ impl ::protobuf::Message for PingQuery {
         self.cached_size.get()
     }
 
-    fn get_unknown_fields<'s>(&'s self) -> &'s ::protobuf::UnknownFields {
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
         &self.unknown_fields
     }
 
-    fn mut_unknown_fields<'s>(&'s mut self) -> &'s mut ::protobuf::UnknownFields {
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
         &mut self.unknown_fields
     }
 
@@ -1007,7 +1017,7 @@ impl PingResponse {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_origin<'a>(&'a mut self) -> &'a mut Node {
+    pub fn mut_origin(&mut self) -> &mut Node {
         if self.origin.is_none() {
             self.origin.set_default();
         };
@@ -1019,7 +1029,7 @@ impl PingResponse {
         self.origin.take().unwrap_or_else(|| Node::new())
     }
 
-    pub fn get_origin<'a>(&'a self) -> &'a Node {
+    pub fn get_origin(&self) -> &Node {
         self.origin.as_ref().unwrap_or_else(|| Node::default_instance())
     }
 }
@@ -1074,11 +1084,11 @@ impl ::protobuf::Message for PingResponse {
         self.cached_size.get()
     }
 
-    fn get_unknown_fields<'s>(&'s self) -> &'s ::protobuf::UnknownFields {
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
         &self.unknown_fields
     }
 
-    fn mut_unknown_fields<'s>(&'s mut self) -> &'s mut ::protobuf::UnknownFields {
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
         &mut self.unknown_fields
     }
 
@@ -1195,7 +1205,7 @@ impl PacketQuery {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_origin<'a>(&'a mut self) -> &'a mut Node {
+    pub fn mut_origin(&mut self) -> &mut Node {
         if self.origin.is_none() {
             self.origin.set_default();
         };
@@ -1207,7 +1217,7 @@ impl PacketQuery {
         self.origin.take().unwrap_or_else(|| Node::new())
     }
 
-    pub fn get_origin<'a>(&'a self) -> &'a Node {
+    pub fn get_origin(&self) -> &Node {
         self.origin.as_ref().unwrap_or_else(|| Node::default_instance())
     }
 
@@ -1228,7 +1238,7 @@ impl PacketQuery {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_payload<'a>(&'a mut self) -> &'a mut ::std::vec::Vec<u8> {
+    pub fn mut_payload(&mut self) -> &mut ::std::vec::Vec<u8> {
         if self.payload.is_none() {
             self.payload.set_default();
         };
@@ -1240,7 +1250,7 @@ impl PacketQuery {
         self.payload.take().unwrap_or_else(|| ::std::vec::Vec::new())
     }
 
-    pub fn get_payload<'a>(&'a self) -> &'a [u8] {
+    pub fn get_payload(&self) -> &[u8] {
         match self.payload.as_ref() {
             Some(v) => &v,
             None => &[],
@@ -1310,11 +1320,11 @@ impl ::protobuf::Message for PacketQuery {
         self.cached_size.get()
     }
 
-    fn get_unknown_fields<'s>(&'s self) -> &'s ::protobuf::UnknownFields {
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
         &self.unknown_fields
     }
 
-    fn mut_unknown_fields<'s>(&'s mut self) -> &'s mut ::protobuf::UnknownFields {
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
         &mut self.unknown_fields
     }
 
@@ -1436,7 +1446,7 @@ impl PacketResponse {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_origin<'a>(&'a mut self) -> &'a mut Node {
+    pub fn mut_origin(&mut self) -> &mut Node {
         if self.origin.is_none() {
             self.origin.set_default();
         };
@@ -1448,7 +1458,7 @@ impl PacketResponse {
         self.origin.take().unwrap_or_else(|| Node::new())
     }
 
-    pub fn get_origin<'a>(&'a self) -> &'a Node {
+    pub fn get_origin(&self) -> &Node {
         self.origin.as_ref().unwrap_or_else(|| Node::default_instance())
     }
 }
@@ -1503,11 +1513,11 @@ impl ::protobuf::Message for PacketResponse {
         self.cached_size.get()
     }
 
-    fn get_unknown_fields<'s>(&'s self) -> &'s ::protobuf::UnknownFields {
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
         &self.unknown_fields
     }
 
-    fn mut_unknown_fields<'s>(&'s mut self) -> &'s mut ::protobuf::UnknownFields {
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
         &mut self.unknown_fields
     }
 
@@ -1634,7 +1644,7 @@ impl Envelope {
         self.message_type = ::std::option::Option::Some(v);
     }
 
-    pub fn get_message_type<'a>(&self) -> Envelope_Type {
+    pub fn get_message_type(&self) -> Envelope_Type {
         self.message_type.unwrap_or(Envelope_Type::FIND_NODE_QUERY)
     }
 
@@ -1653,7 +1663,7 @@ impl Envelope {
         self.transaction_id = ::std::option::Option::Some(v);
     }
 
-    pub fn get_transaction_id<'a>(&self) -> u32 {
+    pub fn get_transaction_id(&self) -> u32 {
         self.transaction_id.unwrap_or(0)
     }
 
@@ -1674,7 +1684,7 @@ impl Envelope {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_find_node_query<'a>(&'a mut self) -> &'a mut FindNodeQuery {
+    pub fn mut_find_node_query(&mut self) -> &mut FindNodeQuery {
         if self.find_node_query.is_none() {
             self.find_node_query.set_default();
         };
@@ -1686,7 +1696,7 @@ impl Envelope {
         self.find_node_query.take().unwrap_or_else(|| FindNodeQuery::new())
     }
 
-    pub fn get_find_node_query<'a>(&'a self) -> &'a FindNodeQuery {
+    pub fn get_find_node_query(&self) -> &FindNodeQuery {
         self.find_node_query.as_ref().unwrap_or_else(|| FindNodeQuery::default_instance())
     }
 
@@ -1707,7 +1717,7 @@ impl Envelope {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_find_node_response<'a>(&'a mut self) -> &'a mut FindNodeResponse {
+    pub fn mut_find_node_response(&mut self) -> &mut FindNodeResponse {
         if self.find_node_response.is_none() {
             self.find_node_response.set_default();
         };
@@ -1719,7 +1729,7 @@ impl Envelope {
         self.find_node_response.take().unwrap_or_else(|| FindNodeResponse::new())
     }
 
-    pub fn get_find_node_response<'a>(&'a self) -> &'a FindNodeResponse {
+    pub fn get_find_node_response(&self) -> &FindNodeResponse {
         self.find_node_response.as_ref().unwrap_or_else(|| FindNodeResponse::default_instance())
     }
 
@@ -1740,7 +1750,7 @@ impl Envelope {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_ping_query<'a>(&'a mut self) -> &'a mut PingQuery {
+    pub fn mut_ping_query(&mut self) -> &mut PingQuery {
         if self.ping_query.is_none() {
             self.ping_query.set_default();
         };
@@ -1752,7 +1762,7 @@ impl Envelope {
         self.ping_query.take().unwrap_or_else(|| PingQuery::new())
     }
 
-    pub fn get_ping_query<'a>(&'a self) -> &'a PingQuery {
+    pub fn get_ping_query(&self) -> &PingQuery {
         self.ping_query.as_ref().unwrap_or_else(|| PingQuery::default_instance())
     }
 
@@ -1773,7 +1783,7 @@ impl Envelope {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_ping_response<'a>(&'a mut self) -> &'a mut PingResponse {
+    pub fn mut_ping_response(&mut self) -> &mut PingResponse {
         if self.ping_response.is_none() {
             self.ping_response.set_default();
         };
@@ -1785,7 +1795,7 @@ impl Envelope {
         self.ping_response.take().unwrap_or_else(|| PingResponse::new())
     }
 
-    pub fn get_ping_response<'a>(&'a self) -> &'a PingResponse {
+    pub fn get_ping_response(&self) -> &PingResponse {
         self.ping_response.as_ref().unwrap_or_else(|| PingResponse::default_instance())
     }
 
@@ -1806,7 +1816,7 @@ impl Envelope {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_packet_query<'a>(&'a mut self) -> &'a mut PacketQuery {
+    pub fn mut_packet_query(&mut self) -> &mut PacketQuery {
         if self.packet_query.is_none() {
             self.packet_query.set_default();
         };
@@ -1818,7 +1828,7 @@ impl Envelope {
         self.packet_query.take().unwrap_or_else(|| PacketQuery::new())
     }
 
-    pub fn get_packet_query<'a>(&'a self) -> &'a PacketQuery {
+    pub fn get_packet_query(&self) -> &PacketQuery {
         self.packet_query.as_ref().unwrap_or_else(|| PacketQuery::default_instance())
     }
 
@@ -1839,7 +1849,7 @@ impl Envelope {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_packet_response<'a>(&'a mut self) -> &'a mut PacketResponse {
+    pub fn mut_packet_response(&mut self) -> &mut PacketResponse {
         if self.packet_response.is_none() {
             self.packet_response.set_default();
         };
@@ -1851,7 +1861,7 @@ impl Envelope {
         self.packet_response.take().unwrap_or_else(|| PacketResponse::new())
     }
 
-    pub fn get_packet_response<'a>(&'a self) -> &'a PacketResponse {
+    pub fn get_packet_response(&self) -> &PacketResponse {
         self.packet_response.as_ref().unwrap_or_else(|| PacketResponse::default_instance())
     }
 }
@@ -1995,11 +2005,11 @@ impl ::protobuf::Message for Envelope {
         self.cached_size.get()
     }
 
-    fn get_unknown_fields<'s>(&'s self) -> &'s ::protobuf::UnknownFields {
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
         &self.unknown_fields
     }
 
-    fn mut_unknown_fields<'s>(&'s mut self) -> &'s mut ::protobuf::UnknownFields {
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
         &mut self.unknown_fields
     }
 
