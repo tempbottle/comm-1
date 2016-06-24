@@ -3,17 +3,17 @@ pub mod protobufs;
 use address::Address;
 
 #[derive(Debug, Clone)]
-pub struct CommMessage {
+pub struct Envelope {
     pub recipient: Address,
     pub text_message: Option<TextMessage>,
     pub message_acknowledgement: Option<MessageAcknowledgement>
 }
 
-impl CommMessage {
-    pub fn text_message(recipient: Address, sender: Address, text: String) -> CommMessage {
+impl Envelope {
+    pub fn text_message(recipient: Address, sender: Address, text: String) -> Envelope {
         let id = Address::for_content(format!(
                 "{}{}{}", recipient.to_str(), sender.to_str(), text).as_str());
-        CommMessage {
+        Envelope {
             recipient: recipient,
             text_message: Some(TextMessage {
                 id: id,
@@ -24,8 +24,8 @@ impl CommMessage {
         }
     }
 
-    pub fn message_acknowledgement(recipient: Address, message_id: Address) -> CommMessage {
-        CommMessage {
+    pub fn message_acknowledgement(recipient: Address, message_id: Address) -> Envelope {
+        Envelope {
             recipient: recipient,
             text_message: None,
             message_acknowledgement: Some(MessageAcknowledgement {
@@ -36,7 +36,7 @@ impl CommMessage {
 
     pub fn encode(self) -> Vec<u8> {
         use protobuf::Message as MessageForFunctions;
-        let mut message = protobufs::CommMessage::new();
+        let mut message = protobufs::Envelope::new();
         message.set_recipient(self.recipient.to_str());
 
         if let Some(text_message) = self.text_message {
@@ -44,14 +44,14 @@ impl CommMessage {
             encoded.set_id(text_message.id.to_str());
             encoded.set_sender(text_message.sender.to_str());
             encoded.set_text(text_message.text);
-            message.set_message_type(protobufs::CommMessage_Type::TEXT_MESSAGE);
+            message.set_message_type(protobufs::Envelope_Type::TEXT_MESSAGE);
             message.set_text_message(encoded);
         }
 
         if let Some(message_acknowledgement) = self.message_acknowledgement {
             let mut encoded = protobufs::MessageAcknowledgement::new();
             encoded.set_message_id(message_acknowledgement.id.to_str());
-            message.set_message_type(protobufs::CommMessage_Type::MESSAGE_ACKNOWLEDGEMENT);
+            message.set_message_type(protobufs::Envelope_Type::MESSAGE_ACKNOWLEDGEMENT);
             message.set_message_acknowledgement(encoded);
         }
 
@@ -71,15 +71,15 @@ pub struct MessageAcknowledgement {
     pub id: Address
 }
 
-pub fn decode(data: Vec<u8>) -> CommMessage {
+pub fn decode(data: Vec<u8>) -> Envelope {
     use protobuf;
     use std::io::Cursor;
     let mut data = Cursor::new(data);
-    let comm_message = protobuf::parse_from_reader::<protobufs::CommMessage>(&mut data).unwrap();
+    let comm_message = protobuf::parse_from_reader::<protobufs::Envelope>(&mut data).unwrap();
     match comm_message.get_message_type() {
-        protobufs::CommMessage_Type::TEXT_MESSAGE => {
+        protobufs::Envelope_Type::TEXT_MESSAGE => {
             let message = comm_message.get_text_message();
-            CommMessage {
+            Envelope {
                 recipient: Address::from_str(comm_message.get_recipient()),
                 text_message: Some(TextMessage {
                     id: Address::from_str(message.get_id()),
@@ -89,9 +89,9 @@ pub fn decode(data: Vec<u8>) -> CommMessage {
                 message_acknowledgement: None
             }
         }
-        protobufs::CommMessage_Type::MESSAGE_ACKNOWLEDGEMENT => {
+        protobufs::Envelope_Type::MESSAGE_ACKNOWLEDGEMENT => {
             let ack = comm_message.get_message_acknowledgement();
-            CommMessage {
+            Envelope {
                 recipient: Address::from_str(comm_message.get_recipient()),
                 text_message: None,
                 message_acknowledgement: Some(MessageAcknowledgement {

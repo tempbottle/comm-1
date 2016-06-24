@@ -3,7 +3,7 @@ pub mod messages;
 use address::Address;
 use mio;
 use network;
-use self::messages::{CommMessage};
+use self::messages::{Envelope};
 use std::collections::{HashMap, HashSet};
 use std::io;
 use std::sync::mpsc;
@@ -12,12 +12,12 @@ use std::thread;
 #[derive(Debug)]
 pub enum Task {
     HandleNetworkEvent(network::Event),
-    ScheduleMessageDelivery(Address, CommMessage)
+    ScheduleMessageDelivery(Address, Envelope)
 }
 
 #[derive(Debug)]
 pub enum ScheduledTask {
-    DeliverMessage(Address, CommMessage),
+    DeliverMessage(Address, Envelope),
 }
 
 pub struct Client {
@@ -26,7 +26,7 @@ pub struct Client {
     received: HashSet<Address>,
     pending_deliveries: HashMap<Address, mio::Timeout>,
     delivered: HashMap<Address, usize>,
-    acknowledgements: HashMap<Address, CommMessage>
+    acknowledgements: HashMap<Address, Envelope>
 }
 
 impl Client {
@@ -73,7 +73,7 @@ impl Client {
                 let recipient = Address::from_str(parts[0]);
                 let message_text = parts[1].trim().to_string();
 
-                let message = CommMessage::text_message(recipient, sender, message_text);
+                let message = Envelope::text_message(recipient, sender, message_text);
                 notify_channel
                     .send(Task::ScheduleMessageDelivery(recipient, message))
                     .unwrap_or_else(|err| info!("Couldn't schedule message delivery: {:?}", err));
@@ -85,14 +85,14 @@ impl Client {
         match event {
             network::Event::ReceivedPacket(data) => {
                 let comm_message = messages::decode(data);
-                let CommMessage { recipient, .. } = comm_message.clone();
+                let Envelope { recipient, .. } = comm_message.clone();
 
                 if let Some(ref text_message) = comm_message.text_message {
                     if !self.received.contains(&text_message.id) {
                         self.received.insert(text_message.id);
                         if recipient == self.address {
                             println!("{}: {}", text_message.sender, text_message.text);
-                            let ack = CommMessage::message_acknowledgement(text_message.sender, text_message.id);
+                            let ack = Envelope::message_acknowledgement(text_message.sender, text_message.id);
                             self.schedule_message_delivery(text_message.sender, ack, event_loop);
                         } else {
                             if let Some(ack) = self.acknowledgements.remove(&text_message.id) {
@@ -119,7 +119,7 @@ impl Client {
         }
     }
 
-    fn schedule_message_delivery(&mut self, recipient: Address, message: CommMessage, event_loop: &mut mio::EventLoop<Client>) {
+    fn schedule_message_delivery(&mut self, recipient: Address, message: Envelope, event_loop: &mut mio::EventLoop<Client>) {
         if let Some(ref text_message) = message.text_message {
             if !self.pending_deliveries.contains_key(&text_message.id) {
                 let delivered = self.delivered.entry(text_message.id).or_insert(0);
@@ -136,7 +136,7 @@ impl Client {
         }
     }
 
-    fn deliver_message(&mut self, recipient: Address, message: CommMessage, event_loop: &mut mio::EventLoop<Client>) {
+    fn deliver_message(&mut self, recipient: Address, message: Envelope, event_loop: &mut mio::EventLoop<Client>) {
         if let Some(ref text_message) = message.text_message {
             self.pending_deliveries.remove(&text_message.id);
             self.schedule_message_delivery(recipient, message.clone(), event_loop);

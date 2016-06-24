@@ -8,7 +8,7 @@ message MessageAcknowledgement {
     required string message_id = 1;
 }
 
-message CommMessage {
+message Envelope {
     enum Type {
         TEXT_MESSAGE = 1;
         MESSAGE_ACKNOWLEDGEMENT = 2;
