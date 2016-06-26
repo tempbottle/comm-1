@@ -89,19 +89,18 @@ impl Client {
 
                 match envelope.message {
                     Message::TextMessage(text_message) => {
-                        if !self.received.contains(&text_message.id) {
-                            self.received.insert(text_message.id);
-                            if recipient == self.address {
+                        if recipient == self.address {
+                            if self.received.insert(text_message.id) {
                                 println!("{}: {}", text_message.sender, text_message.text);
                                 let ack = MessageAcknowledgement::new(text_message.id);
                                 self.deliver_acknowledgement(text_message.sender, ack, event_loop);
+                            }
+                        } else {
+                            if let Some(ack) = self.acknowledgements.remove(&text_message.id) {
+                                self.deliver_acknowledgement(sender, ack.clone(), event_loop);
+                                self.acknowledgements.insert(text_message.id, ack);
                             } else {
-                                if let Some(ack) = self.acknowledgements.remove(&text_message.id) {
-                                    self.deliver_acknowledgement(sender, ack.clone(), event_loop);
-                                    self.acknowledgements.insert(text_message.id, ack);
-                                } else {
-                                    self.schedule_message_delivery(recipient, text_message, event_loop);
-                                }
+                                self.schedule_message_delivery(recipient, text_message, event_loop);
                             }
                         }
                     }
