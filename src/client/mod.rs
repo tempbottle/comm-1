@@ -106,9 +106,9 @@ impl Client {
                         }
                     }
                     Message::MessageAcknowledgement(ack) => {
-                        if let None = self.acknowledgements.insert(ack.message_id, ack.clone()) {
-                            self.pending_deliveries.remove(&ack.message_id).map(|p| event_loop.clear_timeout(p));
+                        self.pending_deliveries.remove(&ack.message_id).map(|p| event_loop.clear_timeout(p));
 
+                        if let None = self.acknowledgements.insert(ack.message_id, ack.clone()) {
                             if recipient == self.address {
                                 debug!("ack {}", ack.message_id);
                             } else {
