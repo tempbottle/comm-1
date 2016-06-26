@@ -18,7 +18,7 @@ pub enum ScheduledTask {
 
 #[derive(Debug)]
 pub enum Event {
-    ReceivedPacket(Vec<u8>)
+    ReceivedPacket(Address, Vec<u8>)
 }
 
 pub enum OneshotTask {
@@ -109,7 +109,7 @@ impl Network {
                     },
                     Query::Packet(payload) => {
                         for listener in &self.event_listeners {
-                            listener.send(Event::ReceivedPacket(payload.clone())).unwrap();
+                            listener.send(Event::ReceivedPacket(origin_address, payload.clone())).unwrap();
                         }
                         let response = outgoing::create_packet_response(
                             transaction_id, &self.self_node);

@@ -3,7 +3,7 @@ pub mod messages;
 use address::Address;
 use mio;
 use network;
-use self::messages::{Envelope};
+use self::messages::{Message, TextMessage, MessageAcknowledgement, Envelope};
 use std::collections::{HashMap, HashSet};
 use std::io;
 use std::sync::mpsc;
@@ -12,12 +12,12 @@ use std::thread;
 #[derive(Debug)]
 pub enum Task {
     HandleNetworkEvent(network::Event),
-    ScheduleMessageDelivery(Address, Envelope)
+    ScheduleMessageDelivery(Address, TextMessage)
 }
 
 #[derive(Debug)]
 pub enum ScheduledTask {
-    DeliverMessage(Address, Envelope),
+    DeliverMessage(Address, TextMessage),
 }
 
 pub struct Client {
@@ -26,7 +26,7 @@ pub struct Client {
     received: HashSet<Address>,
     pending_deliveries: HashMap<Address, mio::Timeout>,
     delivered: HashMap<Address, usize>,
-    acknowledgements: HashMap<Address, Envelope>
+    acknowledgements: HashMap<Address, MessageAcknowledgement>
 }
 
 impl Client {
@@ -73,9 +73,9 @@ impl Client {
                 let recipient = Address::from_str(parts[0]);
                 let message_text = parts[1].trim().to_string();
 
-                let message = Envelope::text_message(recipient, sender, message_text);
+                let text_message = TextMessage::new(sender, message_text);
                 notify_channel
-                    .send(Task::ScheduleMessageDelivery(recipient, message))
+                    .send(Task::ScheduleMessageDelivery(recipient, text_message))
                     .unwrap_or_else(|err| info!("Couldn't schedule message delivery: {:?}", err));
             }
         }
@@ -83,66 +83,71 @@ impl Client {
 
     fn handle_networking_event(&mut self, event: network::Event, event_loop: &mut mio::EventLoop<Client>) {
         match event {
-            network::Event::ReceivedPacket(data) => {
-                let comm_message = messages::decode(data);
-                let Envelope { recipient, .. } = comm_message.clone();
+            network::Event::ReceivedPacket(sender, data) => {
+                let envelope = messages::decode(data);
+                let Envelope { recipient, .. } = envelope.clone();
 
-                if let Some(ref text_message) = comm_message.text_message {
-                    if !self.received.contains(&text_message.id) {
-                        self.received.insert(text_message.id);
-                        if recipient == self.address {
-                            println!("{}: {}", text_message.sender, text_message.text);
-                            let ack = Envelope::message_acknowledgement(text_message.sender, text_message.id);
-                            self.schedule_message_delivery(text_message.sender, ack, event_loop);
-                        } else {
-                            if let Some(ack) = self.acknowledgements.remove(&text_message.id) {
-                                self.schedule_message_delivery(recipient, ack.clone(), event_loop);
-                                self.acknowledgements.insert(text_message.id, ack);
+                match envelope.message {
+                    Message::TextMessage(text_message) => {
+                        if !self.received.contains(&text_message.id) {
+                            self.received.insert(text_message.id);
+                            if recipient == self.address {
+                                println!("{}: {}", text_message.sender, text_message.text);
+                                let ack = MessageAcknowledgement::new(text_message.id);
+                                self.deliver_acknowledgement(text_message.sender, ack, event_loop);
                             } else {
-                                self.schedule_message_delivery(recipient, comm_message.clone(), event_loop);
+                                if let Some(ack) = self.acknowledgements.remove(&text_message.id) {
+                                    self.deliver_acknowledgement(sender, ack.clone(), event_loop);
+                                    self.acknowledgements.insert(text_message.id, ack);
+                                } else {
+                                    self.schedule_message_delivery(recipient, text_message, event_loop);
+                                }
+                            }
+                        }
+                    }
+                    Message::MessageAcknowledgement(ack) => {
+                        if let None = self.acknowledgements.insert(ack.message_id, ack.clone()) {
+                            self.pending_deliveries.remove(&ack.message_id).map(|p| event_loop.clear_timeout(p));
+
+                            if recipient == self.address {
+                                debug!("ack {}", ack.message_id);
+                            } else {
+                                self.deliver_acknowledgement(recipient, ack, event_loop);
                             }
                         }
                     }
                 }
-
-                if let Some(ref ack) = comm_message.message_acknowledgement {
-                    if let None = self.acknowledgements.insert(ack.id, comm_message.clone()) {
-                        self.pending_deliveries.remove(&ack.id).map(|p| event_loop.clear_timeout(p));
-                        if recipient == self.address {
-                            debug!("ack {}", ack.id);
-                        } else {
-                            self.schedule_message_delivery(recipient, comm_message.clone(), event_loop);
-                        }
-                    }
-                }
             }
         }
     }
 
-    fn schedule_message_delivery(&mut self, recipient: Address, message: Envelope, event_loop: &mut mio::EventLoop<Client>) {
-        if let Some(ref text_message) = message.text_message {
-            if !self.pending_deliveries.contains_key(&text_message.id) {
-                let delivered = self.delivered.entry(text_message.id).or_insert(0);
-                let delay = (2u64.pow(*delivered as u32) - 1) * 1000;
-                debug!("Delivery with delay {:?}", delay);
-                let timeout = event_loop.timeout_ms(ScheduledTask::DeliverMessage(recipient, message.clone()), delay).unwrap();
-                self.pending_deliveries.insert(text_message.id, timeout);
-                *delivered += 1;
-            }
-        }
-
-        if let Some(_) = message.message_acknowledgement {
-            event_loop.timeout_ms(ScheduledTask::DeliverMessage(recipient, message.clone()), 0).unwrap();
+    fn schedule_message_delivery(&mut self, recipient: Address, text_message: TextMessage, event_loop: &mut mio::EventLoop<Client>) {
+        if !self.pending_deliveries.contains_key(&text_message.id) {
+            let delivered = self.delivered.entry(text_message.id).or_insert(0);
+            let delay = (2u64.pow(*delivered as u32) - 1) * 1000;
+            debug!("Delivery with delay {:?}", delay);
+            let timeout = event_loop.timeout_ms(ScheduledTask::DeliverMessage(recipient, text_message.clone()), delay).unwrap();
+            self.pending_deliveries.insert(text_message.id, timeout);
+            *delivered += 1;
         }
     }
 
-    fn deliver_message(&mut self, recipient: Address, message: Envelope, event_loop: &mut mio::EventLoop<Client>) {
-        if let Some(ref text_message) = message.text_message {
-            self.pending_deliveries.remove(&text_message.id);
-            self.schedule_message_delivery(recipient, message.clone(), event_loop);
-        }
+    fn deliver_acknowledgement(&mut self, recipient: Address, acknowledgement: MessageAcknowledgement, event_loop: &mut mio::EventLoop<Client>) {
         if let Some(ref commands) = self.network_commands {
-            commands.send(network::OneshotTask::SendPacket(recipient, message.encode())).unwrap();
+            let envelope = acknowledgement.envelope(recipient);
+            commands.send(network::OneshotTask::SendPacket(recipient, envelope.encode())).unwrap();
+        }
+    }
+
+    fn deliver_message(&mut self, recipient: Address, text_message: TextMessage, event_loop: &mut mio::EventLoop<Client>) {
+        let delivered = self.network_commands.as_ref().map(|commands| {
+            let envelope = text_message.clone().envelope(recipient);
+            commands.send(network::OneshotTask::SendPacket(recipient, envelope.encode()))
+        }).unwrap();
+
+        if let Ok(_) = delivered {
+            self.pending_deliveries.remove(&text_message.id);
+            self.schedule_message_delivery(recipient, text_message, event_loop);
         }
     }
 }
