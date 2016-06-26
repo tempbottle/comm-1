@@ -30,7 +30,7 @@ pub fn start_multiple(host: &str, port_start: u16, port_end: u16, router_host: O
         let network = network::Network::new(self_node, socket_address, routers);
         let client = client::Client::new(address);
         thread::spawn(move || client.run(network, true));
-        thread::sleep(std::time::Duration::from_millis(200));
+        thread::sleep(std::time::Duration::from_millis(100));
     }
 
     info!("All running :)");
