@@ -126,7 +126,7 @@ impl Client {
         if !self.pending_deliveries.contains_key(&message_id) {
             let delivered = self.delivered.entry(message_id).or_insert(0);
             let delay = (2u64.pow(*delivered as u32) - 1) * 1000;
-            debug!("Delivery with delay {:?}", delay);
+            debug!("Deliver {} with delay {:?}", message_id, delay);
             let timeout = event_loop.timeout_ms(ScheduledTask::DeliverMessage(recipient, text_message), delay).unwrap();
             self.pending_deliveries.insert(message_id, timeout);
             *delivered += 1;
