@@ -38,11 +38,11 @@ impl RoutingTable {
                   &mut TransactionIdGenerator) -> InsertionResult {
         use messages::outgoing;
 
-        if node.addresss() == self.self_address {
+        if node.address() == self.self_address {
             return Ok(InsertOutcome::Ignored);
         }
 
-        let index = self.bucket_for(&node.addresss());
+        let index = self.bucket_for(&node.address());
         let mut bucket = self.buckets.remove(index);
         let self_address = self.self_address;
 
@@ -103,7 +103,7 @@ impl RoutingTable {
             .flat_map(|b| b.get_nodes())
             .collect();
 
-        candidates.sort_by_key(|n| n.addresss().distance_from(address));
+        candidates.sort_by_key(|n| n.address().distance_from(address));
 
         // chain on routers in case we don't have enough nodes yet
         if include_routers {
@@ -237,13 +237,13 @@ mod tests {
 
         {
             let nearest = table.nearest_to(&Address::from_str("fffffffffffffffffffffffffffffffffffffffd"), false);
-            assert_eq!(nearest[0].addresss(), addr_3);
-            assert_eq!(nearest[1].addresss(), addr_2);
+            assert_eq!(nearest[0].address(), addr_3);
+            assert_eq!(nearest[1].address(), addr_2);
         }
         {
             let nearest = table.nearest_to(&Address::from_str("0000000000000000000000000000000000000002"), false);
-            assert_eq!(nearest[0].addresss(), addr_1);
-            assert_eq!(nearest[1].addresss(), addr_2);
+            assert_eq!(nearest[0].address(), addr_1);
+            assert_eq!(nearest[1].address(), addr_2);
         }
     }
 }

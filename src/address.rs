@@ -81,7 +81,7 @@ impl Address {
 }
 
 pub trait Addressable {
-    fn addresss(&self) -> Address;
+    fn address(&self) -> Address;
 }
 
 impl fmt::Debug for Address {

@@ -53,7 +53,7 @@ pub struct Network {
 impl Network {
     pub fn new<N: node::Node + 'static, T: ToSocketAddrs>(self_node: N, host: T, routers: Vec<Box<node::Node>>) -> Network {
         let host = host.to_socket_addrs().unwrap().next().unwrap();
-        let self_address = self_node.addresss().clone();
+        let self_address = self_node.address().clone();
         let routing_table = RoutingTable::new(8, self_address, routers);
 
         Network {
@@ -91,7 +91,7 @@ impl Network {
 
         match message {
             Message::Query(transaction_id, origin, query) => {
-                let origin_address = origin.addresss();
+                let origin_address = origin.address();
                 match query {
                     Query::FindNode(target) => {
                         let response: Vec<u8> = outgoing::create_find_node_response(
@@ -129,7 +129,7 @@ impl Network {
                 }
             }
             Message::Response(transaction_id, origin, response) => {
-                let origin_address = origin.addresss();
+                let origin_address = origin.address();
                 match response {
                     Response::FindNode(mut nodes) => {
                         let mut encounted_new_node = false;
@@ -195,7 +195,7 @@ impl Network {
     }
 
     fn continue_bootstrap(&mut self, event_loop: &mut mio::EventLoop<Handler>) {
-        let address = &self.self_node.addresss();
+        let address = &self.self_node.address();
         let transaction_id = self.find_node(address);
         let timeout = event_loop.timeout_ms(ScheduledTask::ContinueBootstrap, 1000).unwrap();
         self.pending_actions.insert(transaction_id, TableAction::Bootstrap(timeout));
