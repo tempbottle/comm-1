@@ -295,9 +295,8 @@ impl mio::Handler for Handler {
         match task {
             OneshotTask::Incoming(data) => self.network.handle_incoming(data, event_loop),
             OneshotTask::StartBootstrap => self.network.start_bootstrap(event_loop),
-            OneshotTask::SendPacket(recipient, payload) => {
-                self.network.send_packet(recipient, payload, event_loop);
-            }
+            OneshotTask::SendPacket(recipient, payload) =>
+                self.network.send_packet(recipient, payload, event_loop)
         }
     }
 
