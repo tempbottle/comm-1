@@ -85,7 +85,7 @@ impl Client {
         match event {
             network::Event::ReceivedPacket(sender, data) => {
                 let envelope = messages::decode(data);
-                let Envelope { recipient, .. } = envelope.clone();
+                let Envelope { recipient, .. } = envelope;
 
                 match envelope.message {
                     Message::TextMessage(text_message) => {
