@@ -109,7 +109,7 @@ impl Client {
 
                         if let None = self.acknowledgements.insert(ack.message_id, ack.clone()) {
                             if recipient == self.address {
-                                debug!("ack {}", ack.message_id);
+                                println!("Message acked: {}", ack.message_id);
                             } else {
                                 self.deliver_acknowledgement(recipient, ack, event_loop);
                             }
