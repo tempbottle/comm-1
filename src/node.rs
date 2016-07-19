@@ -68,8 +68,8 @@ impl UdpNode {
             socket_address: socket_address,
             pending_queries: HashMap::new(),
             has_ever_responded: false,
-            last_received_query: time::empty_tm(),
-            last_received_response: time::empty_tm()
+            last_received_query: time::now_utc(),
+            last_received_response: time::now_utc()
         }
     }
 
