@@ -7,7 +7,7 @@ use std::cmp;
 use time;
 use transaction::TransactionId;
 
-const FAILED_TO_RESPOND_THRESHOLD: usize = 3;
+const FAILED_TO_RESPOND_THRESHOLD: usize = 5;
 const MINUTES_UNTIL_QUESTIONABLE: i64 = 15;
 
 pub fn deserialize(message: &messages::protobufs::Node) -> Box<Node> {
