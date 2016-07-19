@@ -2,6 +2,8 @@
 
 A hypothetical, distributed, encrypted, instant messaging protocol.
 
+* [Protocol](PROTOCOL.md)
+
 ## Requirements
 
 * No centralized server
