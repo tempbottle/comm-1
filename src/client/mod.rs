@@ -105,6 +105,7 @@ impl Client {
                         }
                     }
                     Message::MessageAcknowledgement(ack) => {
+                        debug!("ack {}", ack.message_id);
                         self.pending_deliveries.remove(&ack.message_id).map(|p| event_loop.clear_timeout(p));
 
                         if let None = self.acknowledgements.insert(ack.message_id, ack.clone()) {
