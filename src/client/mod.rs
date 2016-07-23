@@ -5,7 +5,6 @@ use mio;
 use network;
 use self::messages::{Message, TextMessage, MessageAcknowledgement, Envelope};
 use std::collections::{HashMap, HashSet};
-use std::io;
 use std::sync::mpsc;
 use std::thread;
 
@@ -41,12 +40,11 @@ impl Client {
         }
     }
 
-    pub fn run(mut self, mut network: network::Network, headless: bool) {
+    pub fn run(mut self, mut network: network::Network) -> mio::Sender<Task> {
         let mut event_loop = mio::EventLoop::new().unwrap();
         let (event_sender, event_receiver) = mpsc::channel();
         network.register_event_listener(event_sender);
         let notify_channel = event_loop.channel();
-        let sender = self.address;
 
         thread::spawn(move|| {
             for event in event_receiver.iter() {
@@ -59,26 +57,10 @@ impl Client {
         self.network_commands = Some(network.run());
 
         let notify_channel = event_loop.channel();
+        info!("Running client at {}", self.address);
         thread::spawn(move || event_loop.run(&mut self).unwrap());
+        notify_channel
 
-        info!("Running client at {}", sender);
-
-        if headless {
-            loop { thread::park(); }
-        } else {
-            loop {
-                let mut line = String::new();
-                io::stdin().read_line(&mut line).unwrap();
-                let parts: Vec<&str> = line.splitn(2, ' ').collect();
-                let recipient = Address::from_str(parts[0]);
-                let message_text = parts[1].trim().to_string();
-
-                let text_message = TextMessage::new(sender, message_text);
-                notify_channel
-                    .send(Task::ScheduleMessageDelivery(recipient, text_message))
-                    .unwrap_or_else(|err| info!("Couldn't schedule message delivery: {:?}", err));
-            }
-        }
     }
 
     fn handle_networking_event(&mut self, event: network::Event, event_loop: &mut mio::EventLoop<Client>) {

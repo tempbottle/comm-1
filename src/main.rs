@@ -12,6 +12,9 @@ extern crate time;
 use address::Address;
 use node::UdpNode;
 use std::env;
+use std::io;
+use client::Task;
+use client::messages::TextMessage;
 
 mod address;
 mod client;
@@ -51,6 +54,19 @@ fn main() {
 
         let network = network::Network::new(self_node, host, routers);
         let client = client::Client::new(address);
-        client.run(network, false)
+        let client_channel = client.run(network);
+
+        loop {
+            let mut line = String::new();
+            io::stdin().read_line(&mut line).unwrap();
+            let parts: Vec<&str> = line.splitn(2, ' ').collect();
+            let recipient = Address::from_str(parts[0]);
+            let message_text = parts[1].trim().to_string();
+
+            let text_message = TextMessage::new(address, message_text);
+            client_channel
+                .send(Task::ScheduleMessageDelivery(recipient, text_message))
+                .unwrap_or_else(|err| info!("Couldn't schedule message delivery: {:?}", err));
+        }
     }
 }
