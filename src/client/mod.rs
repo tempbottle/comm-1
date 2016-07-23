@@ -21,15 +21,8 @@ pub enum ScheduledTask {
 
 #[derive(Clone, Debug)]
 pub enum Event {
-    ReceivedTextMessage {
-        id: Address,
-        sender: Address,
-        text: String
-    },
-
-    ReceivedMessageAcknowledgement {
-        message_id: Address,
-    }
+    ReceivedTextMessage(TextMessage),
+    ReceivedMessageAcknowledgement(MessageAcknowledgement)
 }
 
 pub struct Client {
@@ -91,14 +84,11 @@ impl Client {
                     Message::TextMessage(text_message) => {
                         if recipient == self.address {
                             if self.received.insert(text_message.id) {
-                                let event = Event::ReceivedTextMessage {
-                                    id: text_message.id,
-                                    sender: text_message.sender,
-                                    text: text_message.text
-                                };
-                                self.broadcast_event(event);
                                 let ack = MessageAcknowledgement::new(text_message.id);
-                                self.deliver_acknowledgement(text_message.sender, ack, event_loop);
+                                let sender = text_message.sender;
+                                let event = Event::ReceivedTextMessage(text_message);
+                                self.broadcast_event(event);
+                                self.deliver_acknowledgement(sender, ack, event_loop);
                             }
                         } else {
                             if let Some(ack) = self.acknowledgements.remove(&text_message.id) {
@@ -115,10 +105,7 @@ impl Client {
 
                         if let None = self.acknowledgements.insert(ack.message_id, ack.clone()) {
                             if recipient == self.address {
-                                self.broadcast_event(Event::ReceivedMessageAcknowledgement {
-                                    message_id: ack.message_id
-                                });
-                                println!("Message acked: {}", ack.message_id);
+                                self.broadcast_event(Event::ReceivedMessageAcknowledgement(ack));
                             } else {
                                 self.deliver_acknowledgement(recipient, ack, event_loop);
                             }
