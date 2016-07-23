@@ -10,12 +10,6 @@ use std::sync::mpsc;
 use std::thread;
 use transaction::{TransactionId, TransactionIdGenerator};
 
-pub enum ScheduledTask {
-    ContinueBootstrap,
-    ContinueHealthCheck,
-    ContinueRefresh
-}
-
 #[derive(Debug)]
 pub enum Event {
     ReceivedPacket(Address, Vec<u8>)
@@ -25,6 +19,12 @@ pub enum OneshotTask {
     Incoming(Vec<u8>),
     StartBootstrap,
     SendPacket(Address, Vec<u8>)
+}
+
+pub enum ScheduledTask {
+    ContinueBootstrap,
+    ContinueHealthCheck,
+    ContinueRefresh
 }
 
 enum TableAction {
