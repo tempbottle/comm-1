@@ -13,6 +13,8 @@ use address::Address;
 use node::UdpNode;
 use std::env;
 use std::io;
+use std::sync::mpsc;
+use std::thread;
 use client::Task;
 use client::messages::TextMessage;
 
@@ -53,8 +55,16 @@ fn main() {
         };
 
         let network = network::Network::new(self_node, host, routers);
-        let client = client::Client::new(address);
+        let mut client = client::Client::new(address);
+        let (event_sender, events) = mpsc::channel();
+        client.register_event_listener(event_sender);
         let client_channel = client.run(network);
+
+        thread::spawn(move || {
+            for event in events {
+                println!("Event: {:?}", event);
+            }
+        });
 
         loop {
             let mut line = String::new();

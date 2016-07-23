@@ -19,13 +19,27 @@ pub enum ScheduledTask {
     DeliverMessage(Address, TextMessage),
 }
 
+#[derive(Clone, Debug)]
+pub enum Event {
+    ReceivedTextMessage {
+        id: Address,
+        sender: Address,
+        text: String
+    },
+
+    ReceivedMessageAcknowledgement {
+        message_id: Address,
+    }
+}
+
 pub struct Client {
     address: Address,
     network_commands: Option<network::TaskSender>,
     received: HashSet<Address>,
     pending_deliveries: HashMap<Address, mio::Timeout>,
     delivered: HashMap<Address, usize>,
-    acknowledgements: HashMap<Address, MessageAcknowledgement>
+    acknowledgements: HashMap<Address, MessageAcknowledgement>,
+    event_listeners: Vec<mpsc::Sender<Event>>
 }
 
 impl Client {
@@ -36,7 +50,8 @@ impl Client {
             received: HashSet::new(),
             pending_deliveries: HashMap::new(),
             delivered: HashMap::new(),
-            acknowledgements: HashMap::new()
+            acknowledgements: HashMap::new(),
+            event_listeners: Vec::new()
         }
     }
 
@@ -60,7 +75,10 @@ impl Client {
         info!("Running client at {}", self.address);
         thread::spawn(move || event_loop.run(&mut self).unwrap());
         notify_channel
+    }
 
+    pub fn register_event_listener(&mut self, event_listener: mpsc::Sender<Event>) {
+        self.event_listeners.push(event_listener);
     }
 
     fn handle_networking_event(&mut self, event: network::Event, event_loop: &mut mio::EventLoop<Client>) {
@@ -73,7 +91,12 @@ impl Client {
                     Message::TextMessage(text_message) => {
                         if recipient == self.address {
                             if self.received.insert(text_message.id) {
-                                println!("{}: {}", text_message.sender, text_message.text);
+                                let event = Event::ReceivedTextMessage {
+                                    id: text_message.id,
+                                    sender: text_message.sender,
+                                    text: text_message.text
+                                };
+                                self.broadcast_event(event);
                                 let ack = MessageAcknowledgement::new(text_message.id);
                                 self.deliver_acknowledgement(text_message.sender, ack, event_loop);
                             }
@@ -92,6 +115,9 @@ impl Client {
 
                         if let None = self.acknowledgements.insert(ack.message_id, ack.clone()) {
                             if recipient == self.address {
+                                self.broadcast_event(Event::ReceivedMessageAcknowledgement {
+                                    message_id: ack.message_id
+                                });
                                 println!("Message acked: {}", ack.message_id);
                             } else {
                                 self.deliver_acknowledgement(recipient, ack, event_loop);
@@ -115,7 +141,7 @@ impl Client {
         }
     }
 
-    fn deliver_acknowledgement(&mut self, recipient: Address, acknowledgement: MessageAcknowledgement, event_loop: &mut mio::EventLoop<Client>) {
+    fn deliver_acknowledgement(&mut self, recipient: Address, acknowledgement: MessageAcknowledgement, _event_loop: &mut mio::EventLoop<Client>) {
         if let Some(ref commands) = self.network_commands {
             let envelope = acknowledgement.envelope(recipient);
             commands.send(network::OneshotTask::SendPacket(recipient, envelope.encode())).unwrap();
@@ -131,6 +157,12 @@ impl Client {
         if let Ok(_) = delivered {
             self.pending_deliveries.remove(&text_message.id);
             self.schedule_message_delivery(recipient, text_message, event_loop);
+        }
+    }
+
+    fn broadcast_event(&self, event: Event) {
+        for listener in self.event_listeners.iter() {
+            listener.send(event.clone()).expect("Could not broadcast event");
         }
     }
 }
