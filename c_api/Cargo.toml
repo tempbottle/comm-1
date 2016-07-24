@@ -1,0 +1,12 @@
+[package]
+name = "comm-c-api"
+version = "0.1.0"
+authors = ["Zac Stewart <zgstewart@gmail.com>"]
+
+[lib]
+name = "comm"
+crate-type = ["dylib"]
+
+[dependencies]
+comm = { path = ".." }
+env_logger = "0.3.3"
