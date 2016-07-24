@@ -25,6 +25,8 @@ pub enum Event {
     ReceivedMessageAcknowledgement(MessageAcknowledgement)
 }
 
+pub type TaskSender = mio::Sender<Task>;
+
 pub struct Client {
     address: Address,
     network_commands: Option<network::TaskSender>,
@@ -48,7 +50,7 @@ impl Client {
         }
     }
 
-    pub fn run(mut self, mut network: network::Network) -> mio::Sender<Task> {
+    pub fn run(mut self, mut network: network::Network) -> TaskSender {
         let mut event_loop = mio::EventLoop::new().unwrap();
         let (event_sender, event_receiver) = mpsc::channel();
         network.register_event_listener(event_sender);
