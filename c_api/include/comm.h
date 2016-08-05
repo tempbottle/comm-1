@@ -10,6 +10,10 @@ typedef void (*comm_event_received_text_message_callback)(comm_text_message_t *)
 
 void comm_initialize();
 
+/********************************************//**
+ *  Address functions
+ ***********************************************/
+
 comm_address_t *comm_address_for_content(char *content);
 comm_address_t *comm_address_from_str(char *str);
 comm_address_t *comm_address_null();
@@ -21,8 +25,16 @@ comm_address_t *comm_address_copy(comm_address_t *address);
 char *comm_address_to_str(comm_address_t *address);
 void comm_address_destroy(comm_address_t *address);
 
+/********************************************//**
+ *  UdpNode functions
+ ***********************************************/
+
 comm_udp_node_t *comm_udp_node_new(comm_address_t *address, char *socket_address);
 void comm_udp_node_destroy(comm_udp_node_t *udp_node);
+
+/********************************************//**
+ *  Network functions
+ ***********************************************/
 
 /** Returns a new network instance
  *
@@ -39,6 +51,10 @@ comm_network_t *comm_network_new(
 void comm_network_run(comm_network_t *);
 void comm_network_destroy(comm_network_t *network);
 
+/********************************************//**
+ *  Message functions
+ ***********************************************/
+
 comm_text_message_t *comm_text_message_new(comm_address_t *sender, char *text);
 
 /**
@@ -50,6 +66,10 @@ char *comm_text_message_text(comm_text_message_t *text_message);
  * Returns a borroed reference to +text_message+'s sender address.
  */
 comm_address_t *comm_text_message_sender(comm_text_message_t *text_message);
+
+/********************************************//**
+ *  Client functions
+ ***********************************************/
 
 comm_client_t *comm_client_new(comm_address_t *address);
 
