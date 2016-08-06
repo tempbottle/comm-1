@@ -1,11 +1,11 @@
 #include <stdlib.h>
 
-typedef void comm_address_t;
-typedef void comm_udp_node_t;
-typedef void comm_network_t;
-typedef void comm_client_t;
-typedef void comm_client_commands_t;
-typedef void comm_text_message_t;
+typedef struct comm_addresss {} comm_address_t;
+typedef struct comm_udp_node {} comm_udp_node_t;
+typedef struct comm_network {} comm_network_t;
+typedef struct comm_client {} comm_client_t;
+typedef struct comm_client_commands {} comm_client_commands_t;
+typedef struct comm_text_message {} comm_text_message_t;
 typedef void (*comm_event_received_text_message_callback)(comm_text_message_t *);
 
 void comm_initialize();
