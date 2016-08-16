@@ -55,7 +55,9 @@ void comm_network_destroy(comm_network_t *network);
  *  Message functions
  ***********************************************/
 
-comm_text_message_t *comm_text_message_new(comm_address_t *sender, char *text);
+comm_text_message_t *comm_text_message_new(
+        comm_address_t *sender,
+        char *text);
 
 /**
  * Returns a string with the text of a text message.
@@ -66,6 +68,8 @@ char *comm_text_message_text(comm_text_message_t *text_message);
  * Returns a borroed reference to +text_message+'s sender address.
  */
 comm_address_t *comm_text_message_sender(comm_text_message_t *text_message);
+
+void comm_text_message_destroy(comm_text_message_t *text_message);
 
 /********************************************//**
  *  Client functions

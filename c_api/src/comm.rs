@@ -114,6 +114,11 @@ pub extern "C" fn comm_text_message_sender(text_message: *const client::messages
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn comm_text_message_destroy(text_message: *mut client::messages::TextMessage) {
+    let _ = Box::from_raw(text_message);
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn comm_client_new(address: *const Address) -> *mut Client {
     Box::into_raw(Box::new(Client::new(*address)))
 }
