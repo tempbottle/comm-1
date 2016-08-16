@@ -17,7 +17,7 @@ num = "0.1.31"
 log = "0.3.6"
 protobuf = "1.0.18"
 rand = "0.3.14"
-rust-crypto = "0.2.35"
+rust-crypto = { git = "https://github.com/zacstewart/rust-crypto", branch = "aarch64" }
 rustc-serialize = "0.3.19"
 stun = { git = "https://github.com/zacstewart/stun.git" }
 time = "0.1.35"
