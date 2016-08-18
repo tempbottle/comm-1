@@ -27,9 +27,6 @@ int main(int argc, char *argv[]) {
     char *secret = malloc(strlen(argv[1]) + 1);
     strcpy(secret, argv[1]);
     comm_address_t *address = comm_address_for_content(secret);
-    char *socket_addr = malloc(strlen(argv[2]) + 1);
-    strcpy(socket_addr, argv[2]);
-    comm_udp_node_t *self_node = comm_udp_node_new(address, socket_addr);
 
     comm_udp_node_t **routers;
     size_t routers_count = 0;
@@ -44,7 +41,7 @@ int main(int argc, char *argv[]) {
 
     char *host = malloc(strlen(argv[2]) + 1);
     strcpy(host, argv[2]);
-    comm_network_t *network = comm_network_new(self_node, host, routers, routers_count);
+    comm_network_t *network = comm_network_new(address, host, routers, routers_count);
 
     comm_address_t *client_address = comm_address_copy(address);
     comm_client_t *client = comm_client_new(client_address);
@@ -75,6 +72,5 @@ int main(int argc, char *argv[]) {
     }
 
     free(host);
-    free(socket_addr);
     free(secret);
 }

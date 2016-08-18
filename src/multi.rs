@@ -26,8 +26,7 @@ pub fn start_multiple(host: &str, port_start: u16, port_end: u16, router_host: O
 
         let address = Address::random(&min, &max);
         let socket_address = (host, port);
-        let self_node = node::UdpNode::new(address, socket_address);
-        let network = network::Network::new(self_node, socket_address, routers);
+        let network = network::Network::new(address, socket_address, routers);
         let client = client::Client::new(address);
         client.run(network);
         thread::sleep(std::time::Duration::from_millis(100));

@@ -44,7 +44,7 @@ void comm_udp_node_destroy(comm_udp_node_t *udp_node);
  * @param routers_count number of router nodes in +routers+
  */
 comm_network_t *comm_network_new(
-        comm_udp_node_t *self_node,
+        comm_address_t *self_address,
         char *host,
         comm_udp_node_t **routers,
         size_t routers_count);

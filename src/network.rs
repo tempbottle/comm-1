@@ -8,6 +8,7 @@ use std::io::Cursor;
 use std::net::{UdpSocket, ToSocketAddrs, SocketAddr};
 use std::sync::mpsc;
 use std::thread;
+use stun;
 use transaction::{TransactionId, TransactionIdGenerator};
 
 #[derive(Debug)]
@@ -51,9 +52,10 @@ pub struct Network {
 }
 
 impl Network {
-    pub fn new<N: node::Node + 'static, T: ToSocketAddrs>(self_node: N, host: T, routers: Vec<Box<node::Node>>) -> Network {
+    pub fn new<T: ToSocketAddrs>(self_address: Address, host: T, routers: Vec<Box<node::Node>>) -> Network {
         let host = host.to_socket_addrs().unwrap().next().unwrap();
-        let self_address = self_node.address().clone();
+        let mapped_host = stun::get_mapped_address(host).unwrap();
+        let self_node = node::UdpNode::new(self_address, mapped_host);
         let routing_table = RoutingTable::new(8, self_address, routers);
 
         Network {

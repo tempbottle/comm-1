@@ -67,14 +67,14 @@ pub unsafe extern "C" fn comm_udp_node_destroy(udp_node: *mut UdpNode) {
 
 #[no_mangle]
 pub extern "C" fn comm_network_new(
-    self_node: *mut UdpNode, host: *const c_char, routers: *mut *mut UdpNode, routers_count: usize) -> *mut Network {
-    let self_node = unsafe { *Box::from_raw(self_node) };
+    self_address: *mut Address, host: *const c_char, routers: *mut *mut UdpNode, routers_count: usize) -> *mut Network {
+    let self_address = unsafe { *self_address };
     let host: &CStr = unsafe { CStr::from_ptr(host) };
     let routers = unsafe { Vec::from_raw_parts(routers, routers_count, routers_count) };
     let routers: Vec<Box<Node>> = routers.into_iter().map(|r| unsafe {
         Box::from_raw(r) as Box<Node>
     }).collect();
-    let network = Network::new(self_node, host.to_str().unwrap(), vec![]);
+    let network = Network::new(self_address, host.to_str().unwrap(), routers);
     Box::into_raw(Box::new(network))
 }
 

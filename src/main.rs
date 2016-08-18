@@ -26,6 +26,7 @@ mod node;
 mod node_bucket;
 mod multi;
 mod routing_table;
+mod stun;
 mod transaction;
 #[cfg(test)]
 mod tests;
@@ -44,7 +45,6 @@ fn main() {
     } else {
         let address = Address::for_content(secret.as_str());
         let host = args[2].as_str();
-        let self_node = node::UdpNode::new(address, host);
 
         let routers: Vec<Box<node::Node>> = match args.get(3) {
             Some(router_address) => {
@@ -54,7 +54,7 @@ fn main() {
             None => vec![]
         };
 
-        let network = network::Network::new(self_node, host, routers);
+        let network = network::Network::new(address, host, routers);
         let mut client = client::Client::new(address);
         let (event_sender, events) = mpsc::channel();
         client.register_event_listener(event_sender);
