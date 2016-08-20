@@ -1,6 +1,6 @@
 use node_bucket;
 use node_bucket::NodeBucket;
-use address::{Address, Addressable, LENGTH};
+use address::{Address, LENGTH};
 use node::Node;
 use transaction::TransactionIdGenerator;
 
@@ -145,7 +145,7 @@ impl RoutingTable {
 
 #[cfg(test)]
 mod tests {
-    use address::{Address, Addressable};
+    use address::Address;
     use super::{InsertOutcome, RoutingTable};
     use node::Node;
     use tests::TestNode;

@@ -1,4 +1,4 @@
-use address::{LENGTH, Address, Addressable};
+use address::{LENGTH, Address};
 use node::Node;
 use num::bigint::{BigUint, ToBigUint};
 use std::cmp;
@@ -173,7 +173,7 @@ impl NodeBucket {
 
 #[cfg(test)]
 mod tests {
-    use address::{Address, Addressable};
+    use address::Address;
     use super::{InsertOutcome, NodeBucket};
     use tests::TestNode;
     use time;
