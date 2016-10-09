@@ -19,5 +19,5 @@ protobuf = "1.0.18"
 rand = "0.3.14"
 rust-crypto = "0.2.35"
 rustc-serialize = "0.3.19"
-stun = { git = "https://github.com/zacstewart/stun.git" }
+stun = "0.0.2"
 time = "0.1.35"
