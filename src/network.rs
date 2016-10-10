@@ -76,6 +76,7 @@ impl Network {
 
         create_incoming_udp_channel(self.host, event_loop.channel());
         event_loop.channel().send(OneshotTask::StartBootstrap).unwrap();
+        info!("Running server at {:?}", self.self_node);
         let mut handler = Handler::new(self);
         let task_sender = event_loop.channel();
         thread::spawn(move|| event_loop.run(&mut handler).unwrap());
