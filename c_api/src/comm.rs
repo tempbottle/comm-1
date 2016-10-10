@@ -41,6 +41,7 @@ pub extern "C" fn comm_address_copy(address: *const Address) -> *const Address {
     Box::into_raw(Box::new(copy))
 }
 
+// TODO: impl API to clean up leaked strings
 #[no_mangle]
 pub extern "C" fn comm_address_to_str(address: *const Address) -> *const c_char {
     let string = unsafe { *address }.to_str();
@@ -101,6 +102,7 @@ pub extern "C" fn comm_text_message_new(sender: *mut Address, text: *const c_cha
     Box::into_raw(Box::new(client::messages::TextMessage::new(sender, message_text)))
 }
 
+// TODO: impl API to clean up leaked strings
 #[no_mangle]
 pub extern "C" fn comm_text_message_text(text_message: *const client::messages::TextMessage) -> *const c_char {
     let text_message = unsafe { &*text_message };
