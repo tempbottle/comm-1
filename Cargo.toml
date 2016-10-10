@@ -10,6 +10,10 @@ name = "comm"
 [[bin]]
 name = "comm"
 
+[[bin]]
+name = "multi"
+path = "src/multi.rs"
+
 [dependencies]
 env_logger = "0.3.3"
 mio = "0.5.0"
