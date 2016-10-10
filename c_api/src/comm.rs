@@ -44,7 +44,10 @@ pub extern "C" fn comm_address_copy(address: *const Address) -> *const Address {
 #[no_mangle]
 pub extern "C" fn comm_address_to_str(address: *const Address) -> *const c_char {
     let string = unsafe { *address }.to_str();
-    CString::new(string).unwrap().as_ptr()
+    let string = CString::new(string).unwrap();
+    let pointer = string.as_ptr();
+    std::mem::forget(string);
+    pointer
 }
 
 #[no_mangle]
@@ -101,7 +104,10 @@ pub extern "C" fn comm_text_message_new(sender: *mut Address, text: *const c_cha
 #[no_mangle]
 pub extern "C" fn comm_text_message_text(text_message: *const client::messages::TextMessage) -> *const c_char {
     let text_message = unsafe { &*text_message };
-    CString::new(text_message.text.clone()).unwrap().as_ptr()
+    let string = CString::new(text_message.text.clone()).unwrap();
+    let pointer = string.as_ptr();
+    std::mem::forget(string);
+    pointer
 }
 
 #[no_mangle]
