@@ -69,7 +69,8 @@ pub unsafe extern "C" fn comm_udp_node_destroy(udp_node: *mut UdpNode) {
 
 #[no_mangle]
 pub extern "C" fn comm_network_new(
-    self_address: *mut Address, host: *const c_char, routers: *mut *mut UdpNode, routers_count: usize) -> *mut Network {
+    self_address: *mut Address, host: *const c_char,
+    routers: *mut *mut UdpNode, routers_count: usize) -> *mut Network {
     let self_address = unsafe { *self_address };
     let host: &CStr = unsafe { CStr::from_ptr(host) };
     let routers = unsafe { Vec::from_raw_parts(routers, routers_count, routers_count) };
