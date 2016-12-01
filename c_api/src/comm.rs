@@ -86,9 +86,9 @@ pub extern "C" fn comm_network_new(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn comm_network_run(network: *mut Network) {
+pub unsafe extern "C" fn comm_network_run(network: *mut Network) -> *mut network::TaskSender {
     let network = Box::from_raw(network);
-    network.run();
+    Box::into_raw(Box::new(network.run()))
 }
 
 #[no_mangle]
