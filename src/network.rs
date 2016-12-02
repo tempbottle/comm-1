@@ -13,13 +13,15 @@ use transaction::{TransactionId, TransactionIdGenerator};
 
 #[derive(Debug)]
 pub enum Event {
-    ReceivedPacket(Address, Vec<u8>)
+    ReceivedPacket(Address, Vec<u8>),
+    Shutdown
 }
 
 pub enum OneshotTask {
     Incoming(Vec<u8>),
     StartBootstrap,
-    SendPacket(Address, Vec<u8>)
+    SendPacket(Address, Vec<u8>),
+    Shutdown
 }
 
 pub enum ScheduledTask {
@@ -48,7 +50,8 @@ pub struct Network {
     transaction_ids: TransactionIdGenerator,
     status: Status,
     pending_actions: HashMap<TransactionId, TableAction>,
-    event_listeners: Vec<mpsc::Sender<Event>>
+    event_listeners: Vec<mpsc::Sender<Event>>,
+    shutdown_signals: Vec<mpsc::Sender<mpsc::Sender<()>>>
 }
 
 impl Network {
@@ -65,16 +68,19 @@ impl Network {
             transaction_ids: TransactionIdGenerator::new(),
             status: Status::Idle,
             pending_actions: HashMap::new(),
-            event_listeners: vec![]
+            event_listeners: vec![],
+            shutdown_signals: vec![]
         }
     }
 
-    pub fn run(self) -> TaskSender {
+    pub fn run(mut self) -> TaskSender {
         let mut event_loop_config = mio::EventLoopConfig::new();
         event_loop_config.notify_capacity(16384);
         let mut event_loop = mio::EventLoop::configured(event_loop_config).unwrap();
 
-        create_incoming_udp_channel(self.host, event_loop.channel());
+        let shutdown_signal = create_incoming_udp_channel(self.host, event_loop.channel());
+        self.shutdown_signals.push(shutdown_signal);
+
         event_loop.channel().send(OneshotTask::StartBootstrap).unwrap();
         info!("Running server at {:?}", self.self_node);
         let mut handler = Handler::new(self);
@@ -276,6 +282,21 @@ impl Network {
             node.sent_query(transaction_id);
         }
     }
+
+    fn shutdown(&mut self, event_loop: &mut mio::EventLoop<Handler>) {
+        let sentinels: Vec<mpsc::Receiver<()>> = self.shutdown_signals.iter().map(|signal| {
+            let (sentinal_sender, sentinal_receiver) = mpsc::channel();
+            signal.send(sentinal_sender).expect("couldn't send shutdown signal");
+            sentinal_receiver
+        }).collect();
+        for sentinel in sentinels {
+            sentinel.recv().unwrap();
+        }
+        event_loop.shutdown();
+        for listener in &self.event_listeners {
+            listener.send(Event::Shutdown).unwrap();
+        }
+    }
 }
 
 struct Handler {
@@ -299,7 +320,8 @@ impl mio::Handler for Handler {
             OneshotTask::Incoming(data) => self.network.handle_incoming(data, event_loop),
             OneshotTask::StartBootstrap => self.network.start_bootstrap(event_loop),
             OneshotTask::SendPacket(recipient, payload) =>
-                self.network.send_packet(recipient, payload, event_loop)
+                self.network.send_packet(recipient, payload, event_loop),
+            OneshotTask::Shutdown => self.network.shutdown(event_loop)
         }
     }
 
@@ -312,20 +334,43 @@ impl mio::Handler for Handler {
     }
 }
 
-fn create_incoming_udp_channel(host: SocketAddr, sender: TaskSender) {
+// TODO: I'd rather have some kind of select on two channels instead of this nested non-blocking
+// recv. It only works because of the 10ms timeout on the socket.
+fn create_incoming_udp_channel(host: SocketAddr, sender: TaskSender) -> mpsc::Sender<mpsc::Sender<()>> {
+    use std::time::Duration;
+
+    let (shutdown_sender, shutdown_receiver) = mpsc::channel::<mpsc::Sender<()>>();
+
     thread::spawn(move || {
         let host = ("0.0.0.0", host.port());
         let socket = UdpSocket::bind(host).unwrap();
+        socket.set_read_timeout(Some(Duration::from_millis(10))).unwrap();
+
         loop {
-            let mut buf = [0; 4096];
-            match socket.recv_from(&mut buf) {
-                Ok((size, _src)) => {
-                    sender
-                        .send(OneshotTask::Incoming(buf[..size].iter().cloned().collect()))
-                        .unwrap_or_else(|err| info!("Couldn't handling incoming: {:?}", err));
+            match shutdown_receiver.try_recv() {
+                Err(mpsc::TryRecvError::Empty) => {
+                    let mut buf = [0; 4096];
+                    match socket.recv(&mut buf) {
+                        Ok(size) => {
+                            sender.send(OneshotTask::Incoming(buf[..size].iter().cloned().collect()))
+                                .unwrap_or_else(|err| info!("Couldn't handling incoming: {:?}", err));
+                        }
+                        Err(e) => warn!("Error receiving from server: {}", e)
+                    }
                 }
-                Err(e) => panic!("Error receiving from server: {}", e)
+
+                Err(mpsc::TryRecvError::Disconnected) => {
+                    // The other end of the shutdown_receiver was dropped
+                    break
+                }
+
+                Ok(sentinel) => {
+                    sentinel.send(()).unwrap();
+                    break;
+                }
             }
         }
+
     });
+    shutdown_sender
 }

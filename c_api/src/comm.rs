@@ -4,6 +4,7 @@ extern crate comm;
 use comm::address::Address;
 use comm::client;
 use comm::client::{Client, Event, Task, TaskSender};
+use comm::network;
 use comm::network::Network;
 use comm::node::{Node, UdpNode};
 use std::ffi::{CStr, CString};
@@ -46,9 +47,7 @@ pub extern "C" fn comm_address_copy(address: *const Address) -> *const Address {
 pub extern "C" fn comm_address_to_str(address: *const Address) -> *const c_char {
     let string = unsafe { *address }.to_str();
     let string = CString::new(string).unwrap();
-    let pointer = string.as_ptr();
-    std::mem::forget(string);
-    pointer
+    string.into_raw()
 }
 
 #[no_mangle]
@@ -71,26 +70,54 @@ pub unsafe extern "C" fn comm_udp_node_destroy(udp_node: *mut UdpNode) {
 
 #[no_mangle]
 pub extern "C" fn comm_network_new(
-    self_address: *mut Address, host: *const c_char, routers: *mut *mut UdpNode, routers_count: usize) -> *mut Network {
+    self_address: *mut Address, host: *const c_char,
+    routers: *mut *mut UdpNode, routers_count: usize) -> *mut Network {
+
+    use std::mem;
+
     let self_address = unsafe { *self_address };
     let host: &CStr = unsafe { CStr::from_ptr(host) };
-    let routers = unsafe { Vec::from_raw_parts(routers, routers_count, routers_count) };
-    let routers: Vec<Box<Node>> = routers.into_iter().map(|r| unsafe {
+    let raw_routers = unsafe { Vec::from_raw_parts(routers, routers_count, routers_count) };
+    let routers: Vec<Box<Node>> = raw_routers.iter().map(|&r| unsafe {
         Box::from_raw(r) as Box<Node>
     }).collect();
+    mem::forget(raw_routers);
     let network = Network::new(self_address, host.to_str().unwrap(), routers);
     Box::into_raw(Box::new(network))
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn comm_network_run(network: *mut Network) {
+pub unsafe extern "C" fn comm_network_run(network: *mut Network) -> *mut network::TaskSender {
     let network = Box::from_raw(network);
-    network.run();
+    Box::into_raw(Box::new(network.run()))
+}
+
+#[no_mangle]
+pub extern "C" fn comm_network_register_shutdown_callback(
+    network: *mut Network, callback: extern fn() -> ()) {
+
+    let network = unsafe { &mut *network };
+    let (event_sender, events) = mpsc::channel();
+    network.register_event_listener(event_sender);
+
+    thread::spawn(move || {
+        for event in events {
+            if let network::Event::Shutdown = event {
+                callback();
+            }
+        }
+    });
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn comm_network_destroy(network: *mut Network) {
     let _ = Box::from_raw(network);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn comm_network_commands_shutdown(commands: *mut network::TaskSender) {
+    let commands = &*commands;
+    commands.send(network::OneshotTask::Shutdown).expect("Couldn't send shutdown task");
 }
 
 #[no_mangle]
@@ -107,9 +134,7 @@ pub extern "C" fn comm_text_message_new(sender: *mut Address, text: *const c_cha
 pub extern "C" fn comm_text_message_text(text_message: *const client::messages::TextMessage) -> *const c_char {
     let text_message = unsafe { &*text_message };
     let string = CString::new(text_message.text.clone()).unwrap();
-    let pointer = string.as_ptr();
-    std::mem::forget(string);
-    pointer
+    string.into_raw()
 }
 
 #[no_mangle]

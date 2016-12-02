@@ -11,7 +11,8 @@ use std::thread;
 #[derive(Debug)]
 pub enum Task {
     HandleNetworkEvent(network::Event),
-    ScheduleMessageDelivery(Address, TextMessage)
+    ScheduleMessageDelivery(Address, TextMessage),
+    Shutdown
 }
 
 #[derive(Debug)]
@@ -22,7 +23,8 @@ pub enum ScheduledTask {
 #[derive(Clone, Debug)]
 pub enum Event {
     ReceivedTextMessage(TextMessage),
-    ReceivedMessageAcknowledgement(MessageAcknowledgement)
+    ReceivedMessageAcknowledgement(MessageAcknowledgement),
+    Shutdown
 }
 
 pub type TaskSender = mio::Sender<Task>;
@@ -115,6 +117,10 @@ impl Client {
                     }
                 }
             }
+            network::Event::Shutdown => {
+                event_loop.shutdown();
+                self.broadcast_event(Event::Shutdown);
+            }
         }
     }
 
@@ -154,6 +160,12 @@ impl Client {
             listener.send(event.clone()).expect("Could not broadcast event");
         }
     }
+
+    fn shutdown(&self, _event_loop: &mut mio::EventLoop<Client>) {
+        if let Some(ref commands) = self.network_commands {
+            commands.send(network::OneshotTask::Shutdown).unwrap();
+        }
+    }
 }
 
 impl mio::Handler for Client {
@@ -163,7 +175,8 @@ impl mio::Handler for Client {
     fn notify(&mut self, event_loop: &mut mio::EventLoop<Client>, task: Task) {
         match task {
             Task::HandleNetworkEvent(event) => self.handle_networking_event(event, event_loop),
-            Task::ScheduleMessageDelivery(recipient, message) => self.schedule_message_delivery(recipient, message, event_loop)
+            Task::ScheduleMessageDelivery(recipient, message) => self.schedule_message_delivery(recipient, message, event_loop),
+            Task::Shutdown => self.shutdown(event_loop)
         }
     }
 

@@ -16,9 +16,9 @@ path = "src/multi.rs"
 
 [dependencies]
 env_logger = "0.3.3"
+log = "0.3.6"
 mio = "0.5.0"
 num = "0.1.31"
-log = "0.3.6"
 protobuf = "1.0.18"
 rand = "0.3.14"
 rust-crypto = "0.2.35"
