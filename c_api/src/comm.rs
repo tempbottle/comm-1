@@ -4,6 +4,7 @@ extern crate comm;
 use comm::address::Address;
 use comm::client;
 use comm::client::{Client, Event, Task, TaskSender};
+use comm::network;
 use comm::network::Network;
 use comm::node::{Node, UdpNode};
 use std::ffi::{CStr, CString};
@@ -92,8 +93,31 @@ pub unsafe extern "C" fn comm_network_run(network: *mut Network) -> *mut network
 }
 
 #[no_mangle]
+pub extern "C" fn comm_network_register_shutdown_callback(
+    network: *mut Network, callback: extern fn() -> ()) {
+
+    let network = unsafe { &mut *network };
+    let (event_sender, events) = mpsc::channel();
+    network.register_event_listener(event_sender);
+
+    thread::spawn(move || {
+        for event in events {
+            if let network::Event::Shutdown = event {
+                callback();
+            }
+        }
+    });
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn comm_network_destroy(network: *mut Network) {
     let _ = Box::from_raw(network);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn comm_network_commands_shutdown(commands: *mut network::TaskSender) {
+    let commands = &*commands;
+    commands.send(network::OneshotTask::Shutdown).expect("Couldn't send shutdown task");
 }
 
 #[no_mangle]
