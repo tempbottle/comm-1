@@ -157,6 +157,22 @@ pub unsafe extern "C" fn comm_client_run(
 }
 
 #[no_mangle]
+pub extern "C" fn comm_client_register_shutdown_callback(
+    client: *mut Client, callback: extern fn() -> ()) {
+    let client = unsafe { &mut *client };
+    let (event_sender, events) = mpsc::channel();
+    client.register_event_listener(event_sender);
+
+    thread::spawn(move || {
+        for event in events {
+            if let Event::Shutdown = event {
+                callback();
+            }
+        }
+    });
+}
+
+#[no_mangle]
 pub extern "C" fn comm_client_register_text_message_received_callback(
     client: *mut Client, callback: extern fn(*const client::messages::TextMessage) -> ()) {
 
@@ -174,6 +190,11 @@ pub extern "C" fn comm_client_register_text_message_received_callback(
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn comm_client_destroy(client: *mut Client) {
+    let _ = Box::from_raw(client);
+}
+
+#[no_mangle]
 pub extern "C" fn comm_client_commands_send_text_message(
     commands: *mut TaskSender,
     recipient: *mut Address,
@@ -185,6 +206,8 @@ pub extern "C" fn comm_client_commands_send_text_message(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn comm_client_destroy(client: *mut Client) {
-    let _ = Box::from_raw(client);
+pub extern "C" fn comm_client_commands_shutdown(commands: *mut TaskSender) {
+    let commands = unsafe { &mut *commands };
+    commands.send(Task::Shutdown).unwrap();
 }
+
