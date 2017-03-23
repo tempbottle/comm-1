@@ -11,6 +11,10 @@ name = "comm"
 name = "comm"
 
 [[bin]]
+name = "oldschool"
+path = "src/oldschool.rs"
+
+[[bin]]
 name = "multi"
 path = "src/multi.rs"
 
