@@ -355,7 +355,7 @@ fn create_incoming_udp_channel(host: SocketAddr, sender: TaskSender) -> mpsc::Se
                             sender.send(OneshotTask::Incoming(buf[..size].iter().cloned().collect()))
                                 .unwrap_or_else(|err| info!("Couldn't handling incoming: {:?}", err));
                         }
-                        Err(e) => {
+                        Err(_) => {
                             //warn!("Error receiving from server: {}", e)
                         }
                     }
