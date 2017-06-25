@@ -62,12 +62,14 @@ fn main() {
         let mut line = String::new();
         io::stdin().read_line(&mut line).unwrap();
         let parts: Vec<&str> = line.splitn(2, ' ').collect();
-        let recipient = Address::from_str(parts[0]);
-        let message_text = parts[1].trim().to_string();
+        if parts.len() == 2 {
+            let recipient = Address::from_str(parts[0]);
+            let message_text = parts[1].trim().to_string();
 
-        let text_message = TextMessage::new(address, message_text);
-        client_channel
-            .send(Task::ScheduleMessageDelivery(recipient, text_message))
-            .unwrap_or_else(|err| info!("Couldn't schedule message delivery: {:?}", err));
+            let text_message = TextMessage::new(address, message_text);
+            client_channel
+                .send(Task::ScheduleMessageDelivery(recipient, text_message))
+                .unwrap_or_else(|err| info!("Couldn't schedule message delivery: {:?}", err));
+        }
     }
 }
