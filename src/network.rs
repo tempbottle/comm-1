@@ -165,6 +165,8 @@ impl Network {
                                 }
                             }
                             Some(TableAction::HealthCheck(_)) => {
+                                // Does not clear timeout. Let's Healthcheck proceed at regular
+                                // interval.
                             },
                             Some(TableAction::RefreshBucket(_)) => {
                             }
