@@ -109,13 +109,6 @@ impl Network {
                                 &self.self_node,
                                 self.routing_table.nearest_to(&target, false));
                         origin.send(response);
-
-                        self.insert_node(origin).unwrap();
-                        {
-                            if let Some(origin) = self.routing_table.find_node(&origin_address) {
-                                origin.received_query(transaction_id);
-                            }
-                        }
                     },
                     Query::Packet(payload) => {
                         for listener in &self.event_listeners {
@@ -130,12 +123,12 @@ impl Network {
                             transaction_id,
                             &self.self_node);
                         origin.send(response);
-
-                        self.insert_node(origin).unwrap();
-                        if let Some(origin) = self.routing_table.find_node(&origin_address) {
-                            origin.received_query(transaction_id);
-                        }
                     }
+                }
+
+                self.insert_node(origin).unwrap();
+                if let Some(origin) = self.routing_table.find_node(&origin_address) {
+                    origin.received_query(transaction_id);
                 }
             }
 
