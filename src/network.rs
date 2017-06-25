@@ -240,7 +240,7 @@ impl Network {
     fn health_check(&mut self) -> TransactionId {
         self.routing_table.remove_bad_nodes();
         let transaction_id = self.transaction_ids.generate();
-        if let Some(node) = self.routing_table.questionable_nodes().get_mut(0) {
+        for node in self.routing_table.questionable_nodes().iter_mut() {
             let query = outgoing::create_ping_query(
                 transaction_id, &self.self_node);
             node.sent_query(transaction_id);
