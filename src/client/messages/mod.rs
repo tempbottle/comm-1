@@ -1,5 +1,9 @@
 pub mod protobufs;
 
+use num;
+use num::bigint::ToBigUint;
+
+use address;
 use address::Address;
 
 #[derive(Debug, Clone)]
@@ -12,8 +16,9 @@ pub struct TextMessage {
 
 impl TextMessage {
     pub fn new(sender: Address, text: String) -> TextMessage {
-        // TODO: Better message ID generation (UUID?)
-        let id = Address::for_content(format!("{}{}", sender.to_str(), text).as_str());
+        let min = 0.to_biguint().unwrap();
+        let max = num::pow(2.to_biguint().unwrap(), address::LENGTH);
+        let id = Address::random(&min, &max);
         TextMessage {
             id: id,
             sender: sender,
