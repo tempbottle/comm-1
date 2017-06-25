@@ -101,6 +101,7 @@ impl Network {
         match message {
             Message::Query(transaction_id, origin, query) => {
                 let origin_address = origin.address();
+
                 match query {
                     Query::FindNode(target) => {
                         let response: Vec<u8> = outgoing::create_find_node_response(
@@ -137,6 +138,7 @@ impl Network {
                     }
                 }
             }
+
             Message::Response(transaction_id, origin, response) => {
                 let origin_address = origin.address();
                 match response {
