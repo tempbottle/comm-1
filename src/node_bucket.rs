@@ -73,8 +73,6 @@ impl NodeBucket {
     }
 
     pub fn insert(&mut self, node: Box<Node>) -> InsertionResult {
-        debug!("Inserting node {:?} into bucket {:?}", &node, self);
-
         let address = node.address();
         if self.covers(&address) {
             if let Some(pos) = self.addresses.iter().position(|a| a == &address) {
@@ -138,8 +136,6 @@ impl NodeBucket {
     }
 
     pub fn split(self) -> (Self, Self) {
-        debug!("Splitting bucket {:?}", &self);
-
         let difference = &self.max - &self.min;
         let partition = difference / 2.to_biguint().unwrap() + &self.min;
         let (a_addresses, b_addresses) = self.addresses
