@@ -60,8 +60,8 @@ impl RoutingTable {
                         let transaction_id = transaction_ids.generate();
                         let query = outgoing::create_ping_query(
                             transaction_id, self_node);
-                        n.send(query);
                         n.sent_query(transaction_id);
+                        n.send(query);
                     }
                     Ok(InsertOutcome::Discarded)
                 }

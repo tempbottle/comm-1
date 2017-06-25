@@ -229,8 +229,8 @@ impl Network {
             &self.self_node,
             address);
         for node in self.routing_table.nearest() {
-            node.send(query.clone());
             node.sent_query(transaction_id);
+            node.send(query.clone());
         }
         transaction_id
     }
@@ -241,8 +241,8 @@ impl Network {
         if let Some(node) = self.routing_table.questionable_nodes().get_mut(0) {
             let query = outgoing::create_ping_query(
                 transaction_id, &self.self_node);
-            node.send(query);
             node.sent_query(transaction_id);
+            node.send(query);
         }
         transaction_id
     }
@@ -273,8 +273,8 @@ impl Network {
             let transaction_id = self.transaction_ids.generate();
             let query = outgoing::create_packet_query(
                 transaction_id, &self.self_node, payload.clone());
-            node.send(query.clone());
             node.sent_query(transaction_id);
+            node.send(query.clone());
         }
     }
 
