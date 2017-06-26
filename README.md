@@ -31,6 +31,19 @@ crate bin path to your `PATH` if you use multirust:
     cargo install protobuf
     PATH=~/.multirust/toolchains/stable/cargo/bin:$PATH
 
+## Usage
+
+You can fire up a CLI chat client by running
+
+    cargo run oldschool -- $SECRET 0.0.0.0:$PORT [1.2.3.4:$OTHER_NODE_PORT]
+
+Where SECRET is a word that will be SHA1 hashed into your node's address, PORT
+is the local port you want to run on, and then third argument is the address
+and port of another node. This other node is a "bootstrap node" and will be
+your entrypoint into the network. It can be another `oldschool` client running
+without a bootstrap router of it's own.
+
+
 # Similar Projects
 
 * [Briar](https://briarproject.org/)
