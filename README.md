@@ -52,3 +52,4 @@ entering its address, followed by a message:
 
 * [Briar](https://briarproject.org/)
 * [Ensichat](https://github.com/Nutomic/ensichat)
+* [Tox](https://tox.chat/)
