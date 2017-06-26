@@ -43,6 +43,10 @@ and port of another node. This other node is a "bootstrap node" and will be
 your entrypoint into the network. It can be another `oldschool` client running
 without a bootstrap router of it's own.
 
+An interactive CLI will start, and you can send a message to another node by
+entering its address, followed by a message:
+
+    44751799925b964a00bae3863cc4236f9bb8d519 Hi there!
 
 # Similar Projects
 
