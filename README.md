@@ -11,17 +11,17 @@ A hypothetical, distributed, encrypted, instant messaging protocol.
 
 ## What the what
 
-0. Client announces a message to the network
-  - message has a unique id
-  - message has a recipient address (public key)
-  - message has a "message" that only recipient can read (using their private key)
-0. Network nodes store and re-announce messages they receive
-0. Network nodes drop messages that they've re-announced for a reasonable amount of time, and a reasonable number of times
-0. Recipient finally gets message, announces acknowledgement
-  - acknowledgement has message's unique id
-  - acknowledgement has signature of message recipient (using their private key)
-0. Network nodes drop messages after verifying their acknowledgement
-0. Network nodes re-announce acknowledgement a reasonable number of times
+1. Client announces a message to the network
+    - message has a unique id
+    - message has a recipient address (public key)
+    - message has a "message" that only recipient can read (using their private key)
+2. Network nodes store and re-announce messages they receive
+3. Network nodes drop messages that they've re-announced for a reasonable amount of time, and a reasonable number of times
+4. Recipient finally gets message, announces acknowledgement
+    - acknowledgement has message's unique id
+    - acknowledgement has signature of message recipient (using their private key)
+6. Network nodes drop messages after verifying their acknowledgement
+7. Network nodes re-announce acknowledgement a reasonable number of times
 
 ## Development
 
