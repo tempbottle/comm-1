@@ -48,6 +48,10 @@ impl NodeBucket {
         }
     }
 
+    pub fn any_bad_nodes(&self) -> bool {
+        self.nodes.iter().any(|(_, node)| node.is_bad())
+    }
+
     pub fn contains(&self, address: &Address) -> bool {
         self.addresses.contains(address)
     }
@@ -87,6 +91,9 @@ impl NodeBucket {
                 self.nodes.insert(address, node);
                 self.last_inserted = time::now_utc();
                 Ok(InsertOutcome::Inserted)
+            } else if self.any_bad_nodes() {
+                self.remove_worst_node();
+                self.insert(node)
             } else {
                 Ok(InsertOutcome::Discarded)
             }
@@ -122,16 +129,12 @@ impl NodeBucket {
         self.addresses.remove(pos);
     }
 
-    pub fn remove_bad_nodes(&mut self) {
-        let mut to_remove = vec![];
-        for (address, node) in self.nodes.iter() {
-            if node.is_bad() {
-                debug!("Removing bad node {:?}", node);
-                to_remove.push(address.clone());
-            }
-        }
-        for address in to_remove {
-            self.remove(&address);
+    pub fn remove_worst_node(&mut self) {
+        if let Some(to_remove) = self.nodes.iter()
+                .filter(|&(_, n)| n.is_bad())
+                .max_by_key(|&(_, n)| n.pending_query_count())
+                .map(|(a, _)| a.clone()) {
+            self.remove(&to_remove)
         }
     }
 
@@ -213,6 +216,19 @@ mod tests {
         assert_eq!(result, InsertOutcome::Discarded);
         assert_eq!(bucket.addresses.len(), 2);
         assert_eq!(bucket.nodes.get(&Address::for_content("node 3")), None);
+    }
+
+    #[test]
+    fn test_insert_full_with_bad_nodes() {
+        let mut bucket: NodeBucket = NodeBucket::new(2);
+        bucket.insert(Box::new(TestNode::new(Address::for_content("node 1")))).unwrap();
+        bucket.insert(Box::new(TestNode::bad(Address::for_content("node 2")))).unwrap();
+        // It should eject the bad node and insert this new one
+        let result = bucket.insert(Box::new(TestNode::new(Address::for_content("node 3")))).unwrap();
+        assert_eq!(result, InsertOutcome::Inserted);
+        assert_eq!(bucket.addresses.len(), 2);
+        assert_eq!(bucket.nodes.get(&Address::for_content("node 2")), None);
+        assert!(bucket.nodes.get(&Address::for_content("node 3")) != None);
     }
 
     #[test]
@@ -319,7 +335,7 @@ mod tests {
     }
 
     #[test]
-    fn test_remove_bad_nodes() {
+    fn test_remove_worst_node() {
         let mut bucket: NodeBucket = NodeBucket::new(8);
         let node_1 = Box::new(TestNode::new(Address::for_content("good node")));
         let node_2 = Box::new(TestNode::questionable(Address::for_content("questionable node")));
@@ -329,7 +345,7 @@ mod tests {
         bucket.insert(node_3).unwrap();
         assert_eq!(bucket.addresses.len(), 3);
 
-        bucket.remove_bad_nodes();
+        bucket.remove_worst_node();
         assert_eq!(bucket.addresses.len(), 2);
     }
 }

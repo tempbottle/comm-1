@@ -92,15 +92,16 @@ impl RoutingTable {
 
     pub fn nearest(&mut self) -> Vec<&mut Box<Node>> {
         let self_address = self.self_address;
-        self.nearest_to(&self_address, true)
+        self.nearest_live_nodes_to(&self_address, true)
     }
 
-    pub fn nearest_to(&mut self, address: &Address, include_routers: bool) -> Vec<&mut Box<Node>> {
+    pub fn nearest_live_nodes_to(&mut self, address: &Address, include_routers: bool) -> Vec<&mut Box<Node>> {
         // TODO: this should walk buckets much more efficiently
 
         let mut candidates: Vec<&mut Box<Node>> = self.buckets
             .iter_mut()
             .flat_map(|b| b.get_nodes())
+            .filter(|n| !n.is_bad())
             .collect();
 
         candidates.sort_by_key(|n| n.address().distance_from(address));
@@ -121,12 +122,6 @@ impl RoutingTable {
             .flat_map(|b| b.get_nodes())
             .filter(|n| n.is_questionable())
             .collect()
-    }
-
-    pub fn remove_bad_nodes(&mut self) {
-        for bucket in self.buckets.iter_mut() {
-            bucket.remove_bad_nodes();
-        }
     }
 
     fn bucket_for(&self, address: &Address) -> usize {
@@ -199,27 +194,7 @@ mod tests {
     }
 
     #[test]
-    fn test_remove_bad_nodes() {
-        let self_address = Address::from_str("0000000000000000000000000000000000000000");
-        let self_node: Box<Node> = Box::new(TestNode::new(self_address));
-        let mut transaction_ids = TransactionIdGenerator::new();
-        let router = Box::new(TestNode::new(Address::null()));
-        let mut table: RoutingTable = RoutingTable::new(8, self_address, vec![router]);
-        let node_1 = Box::new(TestNode::new(Address::from_str("0000000000000000000000000000000000000001")));
-        let node_2 = Box::new(TestNode::new(Address::from_str("0000000000000000000000000000000000000002")));
-        let node_3 = Box::new(TestNode::new(Address::from_str("0000000000000000000000000000000000000003")));
-        let node_4 = Box::new(TestNode::bad(Address::from_str("0000000000000000000000000000000000000004")));
-        table.insert(node_1, &self_node, &mut transaction_ids).unwrap();
-        table.insert(node_2, &self_node, &mut transaction_ids).unwrap();
-        table.insert(node_3, &self_node, &mut transaction_ids).unwrap();
-        table.insert(node_4, &self_node, &mut transaction_ids).unwrap();
-        assert!(table.buckets[0].contains(&Address::from_str("0000000000000000000000000000000000000004")));
-        table.remove_bad_nodes();
-        assert!(!table.buckets[0].contains(&Address::from_str("0000000000000000000000000000000000000004")));
-    }
-
-    #[test]
-    fn test_nearest_to() {
+    fn test_nearest_live_node_to() {
         let self_address = Address::from_str("0000000000000000000000000000000000000000");
         let self_node: Box<Node> = Box::new(TestNode::new(self_address));
         let mut transaction_ids = TransactionIdGenerator::new();
@@ -236,12 +211,12 @@ mod tests {
         table.insert(node_3, &self_node, &mut transaction_ids).unwrap();
 
         {
-            let nearest = table.nearest_to(&Address::from_str("fffffffffffffffffffffffffffffffffffffffd"), false);
+            let nearest = table.nearest_live_nodes_to(&Address::from_str("fffffffffffffffffffffffffffffffffffffffd"), false);
             assert_eq!(nearest[0].address(), addr_3);
             assert_eq!(nearest[1].address(), addr_2);
         }
         {
-            let nearest = table.nearest_to(&Address::from_str("0000000000000000000000000000000000000002"), false);
+            let nearest = table.nearest_live_nodes_to(&Address::from_str("0000000000000000000000000000000000000002"), false);
             assert_eq!(nearest[0].address(), addr_1);
             assert_eq!(nearest[1].address(), addr_2);
         }

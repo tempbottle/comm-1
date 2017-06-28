@@ -60,6 +60,10 @@ impl Node for TestNode {
         self.last_seen
     }
 
+    fn pending_query_count(&self) -> usize {
+        0
+    }
+
     fn received_query(&mut self, _: TransactionId) {
         self.last_seen = time::now_utc();
     }

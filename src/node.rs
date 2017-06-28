@@ -34,6 +34,7 @@ pub trait Node : Addressable + Debug + Serialize + Send + Sync {
     fn is_good(&self) -> bool;
     fn is_questionable(&self) -> bool;
     fn last_seen(&self) -> time::Tm;
+    fn pending_query_count(&self) -> usize;
     fn received_query(&mut self, transaction_id: TransactionId);
     fn received_response(&mut self, transaction_id: TransactionId);
     fn send(&self, message: Vec<u8>);
@@ -79,7 +80,7 @@ impl UdpNode {
         if self.has_ever_responded &&
             time_since_last_seen < time::Duration::minutes(MINUTES_UNTIL_QUESTIONABLE) {
             Status::Good
-        } else if self.pending_queries.len() < FAILED_TO_RESPOND_THRESHOLD {
+        } else if self.pending_query_count() < FAILED_TO_RESPOND_THRESHOLD {
             Status::Questionable
         } else {
             Status::Bad
@@ -102,6 +103,10 @@ impl Node for UdpNode {
 
     fn last_seen(&self) -> time::Tm {
         cmp::max(self.last_received_query, self.last_received_response)
+    }
+
+    fn pending_query_count(&self) -> usize {
+        self.pending_queries.len()
     }
 
     fn received_query(&mut self, _: TransactionId) {

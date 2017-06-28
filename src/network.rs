@@ -107,7 +107,7 @@ impl Network {
                         let response: Vec<u8> = outgoing::create_find_node_response(
                                 transaction_id,
                                 &self.self_node,
-                                self.routing_table.nearest_to(&target, false));
+                                self.routing_table.nearest_live_nodes_to(&target, false));
                         origin.send(response);
                     },
                     Query::Packet(payload) => {
@@ -238,7 +238,6 @@ impl Network {
     }
 
     fn health_check(&mut self) -> TransactionId {
-        self.routing_table.remove_bad_nodes();
         let transaction_id = self.transaction_ids.generate();
         for node in self.routing_table.questionable_nodes().iter_mut() {
             let query = outgoing::create_ping_query(
@@ -271,7 +270,7 @@ impl Network {
     }
 
     fn send_packet(&mut self, recipient: Address, payload: Vec<u8>, _event_loop: &mut mio::EventLoop<Handler>) {
-        for node in self.routing_table.nearest_to(&recipient, false) {
+        for node in self.routing_table.nearest_live_nodes_to(&recipient, false) {
             let transaction_id = self.transaction_ids.generate();
             let query = outgoing::create_packet_query(
                 transaction_id, &self.self_node, payload.clone());
