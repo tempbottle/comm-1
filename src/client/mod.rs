@@ -23,6 +23,7 @@ pub enum ScheduledTask {
 #[derive(Clone, Debug)]
 pub enum Event {
     ReceivedTextMessage(TextMessage),
+    SentTextMessage(TextMessage),
     ReceivedMessageAcknowledgement(MessageAcknowledgement),
     Shutdown
 }
@@ -131,10 +132,11 @@ impl Client {
             let delivered = self.delivered.entry(message_id).or_insert(0);
             let delay = (2u64.pow(*delivered as u32) - 1) * 1000;
             debug!("Deliver {} with delay {:?}", message_id, delay);
-            let timeout = event_loop.timeout_ms(ScheduledTask::DeliverMessage(recipient, text_message), delay).unwrap();
+            let timeout = event_loop.timeout_ms(ScheduledTask::DeliverMessage(recipient, text_message.clone()), delay).unwrap();
             self.pending_deliveries.insert(message_id, timeout);
             *delivered += 1;
         }
+        self.broadcast_event(Event::SentTextMessage(text_message));
     }
 
     fn deliver_acknowledgement(&mut self, recipient: Address, acknowledgement: MessageAcknowledgement, _event_loop: &mut mio::EventLoop<Client>) {
