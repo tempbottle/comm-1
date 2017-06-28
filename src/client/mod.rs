@@ -29,7 +29,7 @@ pub enum Event {
 }
 
 pub type TaskSender = mio::Sender<Task>;
-pub type Events = mpsc::Sender<Event>;
+pub type Events = mpsc::Receiver<Event>;
 
 pub struct Client {
     address: Address,
@@ -76,7 +76,7 @@ impl Client {
         notify_channel
     }
 
-    pub fn register_event_listener(&mut self, event_listener: Events) {
+    pub fn register_event_listener(&mut self, event_listener: mpsc::Sender<Event>) {
         self.event_listeners.push(event_listener);
     }
 
