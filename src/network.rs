@@ -126,6 +126,7 @@ impl Network {
                     }
                 }
 
+                // Always insert the origin node
                 self.insert_node(origin).unwrap();
                 if let Some(origin) = self.routing_table.find_node(&origin_address) {
                     origin.received_query(transaction_id);
@@ -134,11 +135,12 @@ impl Network {
 
             Message::Response(transaction_id, origin, response) => {
                 let origin_address = origin.address();
+                // Always insert the origin node
+                let mut encounted_new_node = self.insert_node(origin) == Ok(InsertOutcome::Inserted);
+
                 match response {
                     Response::FindNode(mut nodes) => {
-                        let mut encounted_new_node = false;
-                        let mut tail = vec![origin];
-                        for node in nodes.drain(..).chain(tail.drain(..)) {
+                        for node in nodes.drain(..) {
                             match self.insert_node(node) {
                                 Ok(InsertOutcome::Inserted) => {
                                     encounted_new_node = true;
@@ -165,7 +167,7 @@ impl Network {
                                 }
                             }
                             Some(TableAction::HealthCheck(_)) => {
-                                // Does not clear timeout. Let's Healthcheck proceed at regular
+                                // Does not clear timeout. Lets Healthcheck proceed at regular
                                 // interval.
                             },
                             Some(TableAction::RefreshBucket(_)) => {
