@@ -268,8 +268,8 @@ mod tests {
     #[test]
     fn test_covers() {
         let bucket: NodeBucket = NodeBucket::new(8);
-        let address_1 = Address::from_str("0000000000000000000000000000000000000000");
-        let address_2 = Address::from_str("ffffffffffffffffffffffffffffffffffffffff");
+        let address_1 = Address::from_str("0000000000000000000000000000000000000000").unwrap();
+        let address_2 = Address::from_str("ffffffffffffffffffffffffffffffffffffffff").unwrap();
         assert!(bucket.covers(&address_1));
         assert!(bucket.covers(&address_2));
     }
@@ -277,10 +277,10 @@ mod tests {
     #[test]
     fn test_split() {
         let mut bucket: NodeBucket = NodeBucket::new(4);
-        let addr_1 = Address::from_str("0000000000000000000000000000000000000000");
-        let addr_2 = Address::from_str("7fffffffffffffffffffffffffffffffffffffff");
-        let addr_3 = Address::from_str("8000000000000000000000000000000000000000");
-        let addr_4 = Address::from_str("ffffffffffffffffffffffffffffffffffffffff");
+        let addr_1 = Address::from_str("0000000000000000000000000000000000000000").unwrap();
+        let addr_2 = Address::from_str("7fffffffffffffffffffffffffffffffffffffff").unwrap();
+        let addr_3 = Address::from_str("8000000000000000000000000000000000000000").unwrap();
+        let addr_4 = Address::from_str("ffffffffffffffffffffffffffffffffffffffff").unwrap();
         let node_1 = Box::new(TestNode::new(addr_1));
         let node_2 = Box::new(TestNode::new(addr_2));
         let node_3 = Box::new(TestNode::new(addr_3));
@@ -298,21 +298,21 @@ mod tests {
         assert_eq!(b.addresses.len(), 2);
 
         // Splits up known nodes
-        assert_eq!(a.nodes[&Address::from_str("0000000000000000000000000000000000000000")].address(), addr_1);
-        assert_eq!(a.nodes[&Address::from_str("0000000000000000000000000000000000000000")].address(), addr_1);
-        assert_eq!(a.nodes[&Address::from_str("7fffffffffffffffffffffffffffffffffffffff")].address(), addr_2);
-        assert_eq!(b.nodes[&Address::from_str("8000000000000000000000000000000000000000")].address(), addr_3);
-        assert_eq!(b.nodes[&Address::from_str("ffffffffffffffffffffffffffffffffffffffff")].address(), addr_4);
+        assert_eq!(a.nodes[&Address::from_str("0000000000000000000000000000000000000000").unwrap()].address(), addr_1);
+        assert_eq!(a.nodes[&Address::from_str("0000000000000000000000000000000000000000").unwrap()].address(), addr_1);
+        assert_eq!(a.nodes[&Address::from_str("7fffffffffffffffffffffffffffffffffffffff").unwrap()].address(), addr_2);
+        assert_eq!(b.nodes[&Address::from_str("8000000000000000000000000000000000000000").unwrap()].address(), addr_3);
+        assert_eq!(b.nodes[&Address::from_str("ffffffffffffffffffffffffffffffffffffffff").unwrap()].address(), addr_4);
 
         // Equitably covers address space
-        assert!(a.covers(&Address::from_str("0000000000000000000000000000000000000000")));
-        assert!(!b.covers(&Address::from_str("0000000000000000000000000000000000000000")));
-        assert!(a.covers(&Address::from_str("7fffffffffffffffffffffffffffffffffffffff")));
-        assert!(!b.covers(&Address::from_str("7fffffffffffffffffffffffffffffffffffffff")));
-        assert!(!a.covers(&Address::from_str("8000000000000000000000000000000000000000")));
-        assert!(b.covers(&Address::from_str("8000000000000000000000000000000000000000")));
-        assert!(!a.covers(&Address::from_str("ffffffffffffffffffffffffffffffffffffffff")));
-        assert!(b.covers(&Address::from_str("ffffffffffffffffffffffffffffffffffffffff")));
+        assert!(a.covers(&Address::from_str("0000000000000000000000000000000000000000").unwrap()));
+        assert!(!b.covers(&Address::from_str("0000000000000000000000000000000000000000").unwrap()));
+        assert!(a.covers(&Address::from_str("7fffffffffffffffffffffffffffffffffffffff").unwrap()));
+        assert!(!b.covers(&Address::from_str("7fffffffffffffffffffffffffffffffffffffff").unwrap()));
+        assert!(!a.covers(&Address::from_str("8000000000000000000000000000000000000000").unwrap()));
+        assert!(b.covers(&Address::from_str("8000000000000000000000000000000000000000").unwrap()));
+        assert!(!a.covers(&Address::from_str("ffffffffffffffffffffffffffffffffffffffff").unwrap()));
+        assert!(b.covers(&Address::from_str("ffffffffffffffffffffffffffffffffffffffff").unwrap()));
     }
 
     #[test]
@@ -321,7 +321,7 @@ mod tests {
 
         // it updates upon inserting a node
         let last_changed_before_insert = bucket.last_changed();
-        let addr = Address::from_str("0000000000000000000000000000000000000000");
+        let addr = Address::from_str("0000000000000000000000000000000000000000").unwrap();
         let node = Box::new(TestNode::new(addr));
         bucket.insert(node).unwrap();
         let last_changed_after_insert = bucket.last_changed();

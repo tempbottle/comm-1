@@ -2,6 +2,7 @@ use crypto::digest::Digest;
 use crypto::sha1::Sha1;
 use num;
 use std::fmt;
+use rustc_serialize::hex;
 
 pub const LENGTH: usize = 160;
 
@@ -39,16 +40,17 @@ impl Address {
         }
     }
 
-    pub fn from_str(string: &str) -> Address {
+    pub fn from_str(string: &str) -> Result<Address, hex::FromHexError> {
         use rustc_serialize::hex::FromHex;
-        let bytes = string.from_hex().unwrap();
-        let mut data = [0u8; 20];
-        for (place, byte) in data.iter_mut().zip(bytes.iter()) {
-            *place = *byte;
-        }
-        Address {
-            data: compact_bytes(&data)
-        }
+        string.from_hex().map(|bytes| {
+            let mut data = [0u8; 20];
+            for (place, byte) in data.iter_mut().zip(bytes.iter()) {
+                *place = *byte;
+            }
+            Address {
+                data: compact_bytes(&data)
+            }
+        })
     }
 
     pub fn null() -> Address {
@@ -131,7 +133,7 @@ mod tests {
 
     #[test]
     fn test_from_str() {
-        let address = Address::from_str("8b45e4bd1c6acb88bebf6407d16205f567e62a3e");
+        let address = Address::from_str("8b45e4bd1c6acb88bebf6407d16205f567e62a3e").unwrap();
         assert_eq!(address.to_str(), "8b45e4bd1c6acb88bebf6407d16205f567e62a3e");
     }
 
@@ -139,23 +141,23 @@ mod tests {
     fn test_as_numeric() {
         use num::bigint::ToBigUint;
 
-        let address = Address::from_str("000000000000000000000000000000000000000f");
+        let address = Address::from_str("000000000000000000000000000000000000000f").unwrap();
         assert_eq!(address.as_numeric(), 15u8.to_biguint().unwrap());
-        let address = Address::from_str("00000000000000000000000000000000000000f0");
+        let address = Address::from_str("00000000000000000000000000000000000000f0").unwrap();
         assert_eq!(address.as_numeric(), 240u8.to_biguint().unwrap());
     }
 
     #[test]
     fn test_equal() {
-        let a = Address::from_str("8b45e4bd1c6acb88bebf6407d16205f567e62a3e");
-        let b = Address::from_str("8b45e4bd1c6acb88bebf6407d16205f567e62a3e");
+        let a = Address::from_str("8b45e4bd1c6acb88bebf6407d16205f567e62a3e").unwrap();
+        let b = Address::from_str("8b45e4bd1c6acb88bebf6407d16205f567e62a3e").unwrap();
         assert_eq!(a, b);
     }
 
     #[test]
     fn test_not_equal() {
-        let a = Address::from_str("8b45e4bd1c6acb88bebf6407d16205f567e62a3e");
-        let b = Address::from_str("8b45e4bd1c6acb88bebf6407d16205f567e62a3f");
+        let a = Address::from_str("8b45e4bd1c6acb88bebf6407d16205f567e62a3e").unwrap();
+        let b = Address::from_str("8b45e4bd1c6acb88bebf6407d16205f567e62a3f").unwrap();
         assert!(a != b);
     }
 }

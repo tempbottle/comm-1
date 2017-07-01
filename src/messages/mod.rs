@@ -37,7 +37,7 @@ pub mod incoming {
                     protobufs::Envelope_Type::FIND_NODE_QUERY => {
                         let find_node_query = message.get_find_node_query();
                         let origin = node::deserialize(find_node_query.get_origin());
-                        let target = Address::from_str(find_node_query.get_target());
+                        let target = Address::from_str(find_node_query.get_target()).unwrap();
                         Ok(Message::Query(transaction_id, origin, Query::FindNode(target)))
                     }
                     protobufs::Envelope_Type::FIND_NODE_RESPONSE => {

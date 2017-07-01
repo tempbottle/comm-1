@@ -14,7 +14,7 @@ pub fn deserialize(message: &messages::protobufs::Node) -> Box<Node> {
     let ip = message.get_ip_address();
     let ip = Ipv4Addr::new(ip[0], ip[1], ip[2], ip[3]);
     let port = message.get_port() as u16;
-    let address = Address::from_str(message.get_id());
+    let address = Address::from_str(message.get_id()).unwrap();
     Box::new(UdpNode::new(address, (ip, port)))
 }
 

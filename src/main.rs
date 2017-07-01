@@ -63,7 +63,7 @@ fn main() {
         io::stdin().read_line(&mut line).unwrap();
         let parts: Vec<&str> = line.splitn(2, ' ').collect();
         if parts.len() == 2 {
-            let recipient = Address::from_str(parts[0]);
+            let recipient = Address::from_str(parts[0]).unwrap();
             let message_text = parts[1].trim().to_string();
 
             let text_message = TextMessage::new(address, message_text);

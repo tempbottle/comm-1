@@ -102,10 +102,10 @@ pub fn decode(data: Vec<u8>) -> Envelope {
         protobufs::Envelope_Type::TEXT_MESSAGE => {
             let message = envelope.get_text_message();
             Envelope {
-                recipient: Address::from_str(envelope.get_recipient()),
+                recipient: Address::from_str(envelope.get_recipient()).unwrap(),
                 message: Message::TextMessage(TextMessage {
-                    id: Address::from_str(message.get_id()),
-                    sender: Address::from_str(message.get_sender()),
+                    id: Address::from_str(message.get_id()).unwrap(),
+                    sender: Address::from_str(message.get_sender()).unwrap(),
                     text: message.get_text().to_string()
                 })
             }
@@ -113,9 +113,9 @@ pub fn decode(data: Vec<u8>) -> Envelope {
         protobufs::Envelope_Type::MESSAGE_ACKNOWLEDGEMENT => {
             let ack = envelope.get_message_acknowledgement();
             Envelope {
-                recipient: Address::from_str(envelope.get_recipient()),
+                recipient: Address::from_str(envelope.get_recipient()).unwrap(),
                 message: Message::MessageAcknowledgement(MessageAcknowledgement {
-                    message_id: Address::from_str(ack.get_message_id())
+                    message_id: Address::from_str(ack.get_message_id()).unwrap()
                 })
             }
         }

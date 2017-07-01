@@ -148,40 +148,40 @@ mod tests {
 
     #[test]
     fn test_insert() {
-        let self_address = Address::from_str("0000000000000000000000000000000000000000");
+        let self_address = Address::from_str("0000000000000000000000000000000000000000").unwrap();
         let self_node: Box<Node> = Box::new(TestNode::new(self_address));
         let mut transaction_ids = TransactionIdGenerator::new();
         let router = Box::new(TestNode::new(Address::null()));
         let mut table: RoutingTable = RoutingTable::new(2, self_address, vec![router]);
-        let node_1 = Box::new(TestNode::new(Address::from_str("0000000000000000000000000000000000000001")));
-        let node_2 = Box::new(TestNode::new(Address::from_str("ffffffffffffffffffffffffffffffffffffffff")));
+        let node_1 = Box::new(TestNode::new(Address::from_str("0000000000000000000000000000000000000001").unwrap()));
+        let node_2 = Box::new(TestNode::new(Address::from_str("ffffffffffffffffffffffffffffffffffffffff").unwrap()));
         table.insert(node_1, &self_node, &mut transaction_ids).unwrap();
         table.insert(node_2, &self_node, &mut transaction_ids).unwrap();
         assert_eq!(table.buckets.len(), 1);
 
         // Splits buckets upon adding a k+1th node in the same space as self node
-        let node_3 = Box::new(TestNode::new(Address::from_str("fffffffffffffffffffffffffffffffffffffffe")));
+        let node_3 = Box::new(TestNode::new(Address::from_str("fffffffffffffffffffffffffffffffffffffffe").unwrap()));
         table.insert(node_3, &self_node, &mut transaction_ids).unwrap();
         assert_eq!(table.buckets.len(), 2);
-        let node_4 = Box::new(TestNode::new(Address::from_str("7fffffffffffffffffffffffffffffffffffffff")));
-        let node_5 = Box::new(TestNode::new(Address::from_str("7ffffffffffffffffffffffffffffffffffffffe")));
+        let node_4 = Box::new(TestNode::new(Address::from_str("7fffffffffffffffffffffffffffffffffffffff").unwrap()));
+        let node_5 = Box::new(TestNode::new(Address::from_str("7ffffffffffffffffffffffffffffffffffffffe").unwrap()));
         table.insert(node_4, &self_node, &mut transaction_ids).unwrap();
         table.insert(node_5, &self_node, &mut transaction_ids).unwrap();
         assert_eq!(table.buckets.len(), 3);
 
         // Replaces instead of duplicates existing nodes
-        let node_6 = Box::new(TestNode::new(Address::from_str("0000000000000000000000000000000000000001")));
-        let node_7 = Box::new(TestNode::new(Address::from_str("0000000000000000000000000000000000000001")));
-        let node_8 = Box::new(TestNode::new(Address::from_str("0000000000000000000000000000000000000001")));
+        let node_6 = Box::new(TestNode::new(Address::from_str("0000000000000000000000000000000000000001").unwrap()));
+        let node_7 = Box::new(TestNode::new(Address::from_str("0000000000000000000000000000000000000001").unwrap()));
+        let node_8 = Box::new(TestNode::new(Address::from_str("0000000000000000000000000000000000000001").unwrap()));
         table.insert(node_6, &self_node, &mut transaction_ids).unwrap();
         table.insert(node_7, &self_node, &mut transaction_ids).unwrap();
         table.insert(node_8, &self_node, &mut transaction_ids).unwrap();
         assert_eq!(table.buckets.len(), 3);
 
         // Disregards new nodes for full, non-self space buckets
-        let node_9 = Box::new(TestNode::new(Address::from_str("fffffffffffffffffffffffffffffffffffffffd")));
-        let node_10 = Box::new(TestNode::new(Address::from_str("fffffffffffffffffffffffffffffffffffffffc")));
-        let node_11 = Box::new(TestNode::new(Address::from_str("fffffffffffffffffffffffffffffffffffffffb")));
+        let node_9 = Box::new(TestNode::new(Address::from_str("fffffffffffffffffffffffffffffffffffffffd").unwrap()));
+        let node_10 = Box::new(TestNode::new(Address::from_str("fffffffffffffffffffffffffffffffffffffffc").unwrap()));
+        let node_11 = Box::new(TestNode::new(Address::from_str("fffffffffffffffffffffffffffffffffffffffb").unwrap()));
         table.insert(node_9, &self_node, &mut transaction_ids).unwrap();
         table.insert(node_10, &self_node, &mut transaction_ids).unwrap();
         table.insert(node_11, &self_node, &mut transaction_ids).unwrap();
@@ -195,14 +195,14 @@ mod tests {
 
     #[test]
     fn test_nearest_live_node_to() {
-        let self_address = Address::from_str("0000000000000000000000000000000000000000");
+        let self_address = Address::from_str("0000000000000000000000000000000000000000").unwrap();
         let self_node: Box<Node> = Box::new(TestNode::new(self_address));
         let mut transaction_ids = TransactionIdGenerator::new();
         let router = Box::new(TestNode::new(Address::null()));
         let mut table: RoutingTable = RoutingTable::new(2, self_address, vec![router]);
-        let addr_1 = Address::from_str("0000000000000000000000000000000000000001");
-        let addr_2 = Address::from_str("7ffffffffffffffffffffffffffffffffffffffe");
-        let addr_3 = Address::from_str("ffffffffffffffffffffffffffffffffffffffff");
+        let addr_1 = Address::from_str("0000000000000000000000000000000000000001").unwrap();
+        let addr_2 = Address::from_str("7ffffffffffffffffffffffffffffffffffffffe").unwrap();
+        let addr_3 = Address::from_str("ffffffffffffffffffffffffffffffffffffffff").unwrap();
         let node_1 = Box::new(TestNode::new(addr_1));
         let node_2 = Box::new(TestNode::new(addr_2));
         let node_3 = Box::new(TestNode::new(addr_3));
@@ -211,12 +211,12 @@ mod tests {
         table.insert(node_3, &self_node, &mut transaction_ids).unwrap();
 
         {
-            let nearest = table.nearest_live_nodes_to(&Address::from_str("fffffffffffffffffffffffffffffffffffffffd"), false);
+            let nearest = table.nearest_live_nodes_to(&Address::from_str("fffffffffffffffffffffffffffffffffffffffd").unwrap(), false);
             assert_eq!(nearest[0].address(), addr_3);
             assert_eq!(nearest[1].address(), addr_2);
         }
         {
-            let nearest = table.nearest_live_nodes_to(&Address::from_str("0000000000000000000000000000000000000002"), false);
+            let nearest = table.nearest_live_nodes_to(&Address::from_str("0000000000000000000000000000000000000002").unwrap(), false);
             assert_eq!(nearest[0].address(), addr_1);
             assert_eq!(nearest[1].address(), addr_2);
         }
