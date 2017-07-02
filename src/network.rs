@@ -241,6 +241,18 @@ impl Network {
 
     fn health_check(&mut self) -> TransactionId {
         let transaction_id = self.transaction_ids.generate();
+
+        // TODO: this should be a separate keep-alive task, but it will be
+        // dependant on the type of connection we're keeping alive.
+        //
+        // Ping nearest node every time.
+        if let Some(nearest_node) = self.routing_table.nearest().first_mut() {
+            let query = outgoing::create_ping_query(
+                transaction_id, &self.self_node);
+            nearest_node.sent_query(transaction_id);
+            nearest_node.send(query);
+        }
+
         for node in self.routing_table.questionable_nodes().iter_mut() {
             let query = outgoing::create_ping_query(
                 transaction_id, &self.self_node);
