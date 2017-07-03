@@ -239,6 +239,10 @@ impl Network {
         transaction_id
     }
 
+    // TODO: I should de-couple operations and transactions. Some operations, e.g. health_check
+    // can be comprised of multiple transactions that must be completed before the operation is
+    // complete. In this case, I should receive a ping from each questionable node before
+    // health_check is done.
     fn health_check(&mut self) -> TransactionId {
         let transaction_id = self.transaction_ids.generate();
 
