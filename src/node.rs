@@ -108,6 +108,13 @@ impl Node {
     pub fn sent_query(&mut self, transaction_id: TransactionId) {
         self.pending_queries.insert(transaction_id, time::now_utc());
     }
+
+    // TODO: this is a temporary measure until a node can support multiple connections. Rather than
+    // updating its only connection, it should just add another to the set and keep track of the
+    // most reliable connection.
+    pub fn update_connection(&mut self, other_node: Self) {
+        self.socket_address = other_node.socket_address;
+    }
 }
 
 impl PartialEq for Node {

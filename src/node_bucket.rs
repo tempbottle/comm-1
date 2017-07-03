@@ -80,10 +80,9 @@ impl NodeBucket {
         let address = node.address();
         if self.covers(&address) {
             if let Some(pos) = self.addresses.iter().position(|a| a == &address) {
-                // TODO: Should this update the node's socket address incase a device has changed
-                // IPs?
                 self.addresses.remove(pos);
                 self.addresses.insert(0, address);
+                self.nodes.get_mut(&address).unwrap().update_connection(node);
                 self.last_inserted = time::now_utc();
                 Ok(InsertOutcome::Updated)
             } else if !self.is_full() {
