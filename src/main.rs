@@ -9,12 +9,12 @@ extern crate rand;
 extern crate rustc_serialize;
 extern crate time;
 
-use address::Address;
-use node::UdpNode;
 use std::env;
 use std::io;
 use std::sync::mpsc;
 use std::thread;
+
+use address::Address;
 use client::Task;
 use client::messages::TextMessage;
 
@@ -27,8 +27,6 @@ mod node_bucket;
 mod routing_table;
 mod stun;
 mod transaction;
-#[cfg(test)]
-mod tests;
 
 fn main() {
     env_logger::init().unwrap();
@@ -38,9 +36,9 @@ fn main() {
     let address = Address::for_content(secret.as_str());
     let host = args[2].as_str();
 
-    let routers: Vec<Box<node::Node>> = match args.get(3) {
+    let routers: Vec<node::Node> = match args.get(3) {
         Some(router_address) => {
-            let router_node = Box::new(UdpNode::new(Address::null(), router_address.as_str()));
+            let router_node = node::Node::new(Address::null(), router_address.as_str());
             vec![router_node]
         }
         None => vec![]

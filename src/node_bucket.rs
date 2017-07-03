@@ -1,4 +1,4 @@
-use address::{LENGTH, Address};
+use address::{LENGTH, Addressable, Address};
 use node::Node;
 use num::bigint::{BigUint, ToBigUint};
 use std::cmp;
@@ -23,7 +23,7 @@ pub struct NodeBucket {
     min: BigUint,
     max: BigUint,
     addresses: Vec<Address>,
-    nodes: HashMap<Address, Box<Node>>,
+    nodes: HashMap<Address, Node>,
     last_inserted: time::Tm
 }
 
@@ -61,22 +61,22 @@ impl NodeBucket {
         self.min <= numeric && numeric < self.max
     }
 
-    pub fn find_node(&mut self, address: &Address) -> Option<&mut Box<Node>> {
+    pub fn find_node(&mut self, address: &Address) -> Option<&mut Node> {
         self.nodes.get_mut(address)
     }
 
-    pub fn get_nodes(&mut self) -> Vec<&mut Box<Node>> {
+    pub fn get_nodes(&mut self) -> Vec<&mut Node> {
         self.nodes.iter_mut().map(|(_, node)| node).collect()
     }
 
-    pub fn questionable_nodes(&mut self) -> Vec<&mut Box<Node>> {
+    pub fn questionable_nodes(&mut self) -> Vec<&mut Node> {
         self.nodes.iter_mut()
             .map(|(_, node)| node)
             .filter(|n| n.is_questionable())
             .collect()
     }
 
-    pub fn insert(&mut self, node: Box<Node>) -> InsertionResult {
+    pub fn insert(&mut self, node: Node) -> InsertionResult {
         let address = node.address();
         if self.covers(&address) {
             if let Some(pos) = self.addresses.iter().position(|a| a == &address) {
@@ -176,15 +176,15 @@ impl NodeBucket {
 
 #[cfg(test)]
 mod tests {
-    use address::Address;
+    use address::{Addressable, Address};
+    use node;
     use super::{InsertOutcome, NodeBucket};
-    use tests::TestNode;
     use time;
 
     #[test]
     fn test_insert() {
         let mut bucket: NodeBucket = NodeBucket::new(8);
-        let node = Box::new(TestNode::new(Address::for_content("some string")));
+        let node = node::tests::good(Address::for_content("some string"));
         assert_eq!(bucket.insert(node).unwrap(), InsertOutcome::Inserted);
         assert_eq!(bucket.addresses.len(), 1);
     }
@@ -195,9 +195,9 @@ mod tests {
         let addr_1 = Address::for_content("node 1");
         let addr_2 = Address::for_content("node 2");
         let addr_3 = Address::for_content("node 1");
-        let a = Box::new(TestNode::new(addr_1));
-        let b = Box::new(TestNode::new(addr_2));
-        let c = Box::new(TestNode::new(addr_3));
+        let a = node::tests::good(addr_1);
+        let b = node::tests::good(addr_2);
+        let c = node::tests::good(addr_3);
 
         bucket.insert(a).unwrap();
         bucket.insert(b).unwrap();
@@ -210,9 +210,9 @@ mod tests {
     #[test]
     fn test_insert_full() {
         let mut bucket: NodeBucket = NodeBucket::new(2);
-        bucket.insert(Box::new(TestNode::new(Address::for_content("node 1")))).unwrap();
-        bucket.insert(Box::new(TestNode::new(Address::for_content("node 2")))).unwrap();
-        let result = bucket.insert(Box::new(TestNode::new(Address::for_content("node 3")))).unwrap();
+        bucket.insert(node::tests::good(Address::for_content("node 1"))).unwrap();
+        bucket.insert(node::tests::good(Address::for_content("node 2"))).unwrap();
+        let result = bucket.insert(node::tests::good(Address::for_content("node 3"))).unwrap();
         assert_eq!(result, InsertOutcome::Discarded);
         assert_eq!(bucket.addresses.len(), 2);
         assert_eq!(bucket.nodes.get(&Address::for_content("node 3")), None);
@@ -221,10 +221,10 @@ mod tests {
     #[test]
     fn test_insert_full_with_bad_nodes() {
         let mut bucket: NodeBucket = NodeBucket::new(2);
-        bucket.insert(Box::new(TestNode::new(Address::for_content("node 1")))).unwrap();
-        bucket.insert(Box::new(TestNode::bad(Address::for_content("node 2")))).unwrap();
+        bucket.insert(node::tests::good(Address::for_content("node 1"))).unwrap();
+        bucket.insert(node::tests::bad(Address::for_content("node 2"))).unwrap();
         // It should eject the bad node and insert this new one
-        let result = bucket.insert(Box::new(TestNode::new(Address::for_content("node 3")))).unwrap();
+        let result = bucket.insert(node::tests::good(Address::for_content("node 3"))).unwrap();
         assert_eq!(result, InsertOutcome::Inserted);
         assert_eq!(bucket.addresses.len(), 2);
         assert_eq!(bucket.nodes.get(&Address::for_content("node 2")), None);
@@ -244,7 +244,7 @@ mod tests {
             nodes: HashMap::new(),
             last_inserted: time::empty_tm()
         };
-        let result = bucket.insert(Box::new(TestNode::new(Address::for_content("node 3"))));
+        let result = bucket.insert(node::tests::good(Address::for_content("node 3")));
         assert!(result.is_err());
     }
 
@@ -253,15 +253,15 @@ mod tests {
         let mut bucket: NodeBucket = NodeBucket::new(2);
         assert!(!bucket.is_full());
 
-        bucket.insert(Box::new(TestNode::new(Address::for_content("node 1")))).unwrap();
-        bucket.insert(Box::new(TestNode::new(Address::for_content("node 2")))).unwrap();
+        bucket.insert(node::tests::good(Address::for_content("node 1"))).unwrap();
+        bucket.insert(node::tests::good(Address::for_content("node 2"))).unwrap();
         assert!(bucket.is_full());
     }
 
     #[test]
     fn test_contains() {
         let mut bucket: NodeBucket = NodeBucket::new(8);
-        bucket.insert(Box::new(TestNode::new(Address::for_content("node 1")))).unwrap();
+        bucket.insert(node::tests::good(Address::for_content("node 1"))).unwrap();
         assert!(bucket.contains(&Address::for_content("node 1")));
     }
 
@@ -281,10 +281,10 @@ mod tests {
         let addr_2 = Address::from_str("7fffffffffffffffffffffffffffffffffffffff").unwrap();
         let addr_3 = Address::from_str("8000000000000000000000000000000000000000").unwrap();
         let addr_4 = Address::from_str("ffffffffffffffffffffffffffffffffffffffff").unwrap();
-        let node_1 = Box::new(TestNode::new(addr_1));
-        let node_2 = Box::new(TestNode::new(addr_2));
-        let node_3 = Box::new(TestNode::new(addr_3));
-        let node_4 = Box::new(TestNode::new(addr_4));
+        let node_1 = node::tests::good(addr_1);
+        let node_2 = node::tests::good(addr_2);
+        let node_3 = node::tests::good(addr_3);
+        let node_4 = node::tests::good(addr_4);
 
         bucket.insert(node_1).unwrap();
         bucket.insert(node_2).unwrap();
@@ -322,7 +322,7 @@ mod tests {
         // it updates upon inserting a node
         let last_changed_before_insert = bucket.last_changed();
         let addr = Address::from_str("0000000000000000000000000000000000000000").unwrap();
-        let node = Box::new(TestNode::new(addr));
+        let node = node::tests::good(addr);
         bucket.insert(node).unwrap();
         let last_changed_after_insert = bucket.last_changed();
         assert!(last_changed_before_insert < last_changed_after_insert);
@@ -337,9 +337,9 @@ mod tests {
     #[test]
     fn test_remove_worst_node() {
         let mut bucket: NodeBucket = NodeBucket::new(8);
-        let node_1 = Box::new(TestNode::new(Address::for_content("good node")));
-        let node_2 = Box::new(TestNode::questionable(Address::for_content("questionable node")));
-        let node_3 = Box::new(TestNode::bad(Address::for_content("bad node")));
+        let node_1 = node::tests::good(Address::for_content("good node"));
+        let node_2 = node::tests::questionable(Address::for_content("questionable node"));
+        let node_3 = node::tests::bad(Address::for_content("bad node"));
         bucket.insert(node_1).unwrap();
         bucket.insert(node_2).unwrap();
         bucket.insert(node_3).unwrap();

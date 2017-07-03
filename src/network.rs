@@ -1,7 +1,7 @@
-use address::Address;
+use address::{Addressable, Address};
 use messages::outgoing;
 use mio;
-use node;
+use node::Node;
 use routing_table::{InsertOutcome, InsertionResult, RoutingTable};
 use std::collections::HashMap;
 use std::io::Cursor;
@@ -46,7 +46,7 @@ enum Status {
 pub struct Network {
     host: SocketAddr,
     routing_table: RoutingTable,
-    self_node: Box<node::Node + 'static>,
+    self_node: Node,
     transaction_ids: TransactionIdGenerator,
     status: Status,
     pending_actions: HashMap<TransactionId, TableAction>,
@@ -55,16 +55,16 @@ pub struct Network {
 }
 
 impl Network {
-    pub fn new<T: ToSocketAddrs>(self_address: Address, host: T, routers: Vec<Box<node::Node>>) -> Network {
+    pub fn new<T: ToSocketAddrs>(self_address: Address, host: T, routers: Vec<Node>) -> Network {
         let host = host.to_socket_addrs().unwrap().next().unwrap();
         let mapped_host = stun::get_mapped_address(host).unwrap();
-        let self_node = node::UdpNode::new(self_address, mapped_host);
+        let self_node = Node::new(self_address, mapped_host);
         let routing_table = RoutingTable::new(8, self_address, routers);
 
         Network {
             host: host,
             routing_table: routing_table,
-            self_node: Box::new(self_node),
+            self_node: self_node,
             transaction_ids: TransactionIdGenerator::new(),
             status: Status::Idle,
             pending_actions: HashMap::new(),
@@ -283,7 +283,7 @@ impl Network {
         }
     }
 
-    fn insert_node(&mut self, node: Box<node::Node>) -> InsertionResult {
+    fn insert_node(&mut self, node: Node) -> InsertionResult {
         self.routing_table.insert(node, &self.self_node, &mut self.transaction_ids)
     }
 

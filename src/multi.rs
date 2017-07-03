@@ -21,9 +21,9 @@ pub fn start_multiple(host: &str, port_start: u16, port_end: u16, router_host: O
     for port in port_start..port_end {
         debug!("-> starting {}", port);
 
-        let routers: Vec<Box<node::Node>> = match router_host {
+        let routers: Vec<node::Node> = match router_host {
             Some(host) => {
-                let router_node = Box::new(node::UdpNode::new(Address::null(), host));
+                let router_node = node::Node::new(Address::null(), host);
                 vec![router_node]
             }
             None => vec![]

@@ -18,5 +18,3 @@ pub mod node_bucket;
 pub mod routing_table;
 pub mod stun;
 pub mod transaction;
-#[cfg(test)]
-mod tests;
