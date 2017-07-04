@@ -17,12 +17,24 @@ fn compact_bytes(data: &[u8]) -> [u32; 5] {
     compacted
 }
 
+/// An `Address` can be used to address anything that is `Addressable`. `Node`s, for example, have
+/// an `Address`. Every `client::messages::TextMessage` has an `Address` as well.
 #[derive(Clone,Copy,Eq,Hash,PartialEq)]
 pub struct Address {
     data: [u32; 5]
 }
 
 impl Address {
+
+    /// Hashes `content` into an `Address`. Current implementation is to take the SHA1 digest of
+    /// `content`, but this is subject to change and should not be depended on.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let addr = address::Address::for_content("alep");
+    /// assert_eq!(addr, address::Address::from_str("44751799925b964a00bae3863cc4236f9bb8d519"));
+    /// ```
     pub fn for_content(content: &str) -> Address {
         let mut hasher = Sha1::new();
         hasher.input_str(content);
@@ -33,6 +45,8 @@ impl Address {
         }
     }
 
+    /// Creates an `Address` from its numeric representation. Useful for randomly generating
+    /// `Address`es within a range.
     pub fn from_numeric(numeric: num::BigUint) -> Address {
         let data = numeric.to_bytes_be();
         Address {
@@ -40,6 +54,8 @@ impl Address {
         }
     }
 
+    /// Creates a `Address` from its hexidecimal string representation. `string` must be
+    /// hexidecimal or an `Err` will be returned.
     pub fn from_str(string: &str) -> Result<Address, hex::FromHexError> {
         use rustc_serialize::hex::FromHex;
         string.from_hex().map(|bytes| {
@@ -53,12 +69,19 @@ impl Address {
         })
     }
 
+    /// The null `Address`. Use to address "nothing." No `Node`, message, or any `Addressable`
+    /// thing should ever reside at the null address. It's useful for bootstrapping a
+    /// `network::Network` when one does not know the address of any peers, but has connection
+    /// details to them such as an IP address and port.
     pub fn null() -> Address {
         Address {
             data: [0; 5]
         }
     }
 
+    /// Randomly generates an `Address` within the address space between `min` and `max`. Useful
+    /// for refreshing a `NodeBucket` by performing a find node operation on a random address
+    /// within its range.
     pub fn random(min: &num::BigUint, max: &num::BigUint) -> Address {
         use rand;
         use num::bigint::RandBigInt;
@@ -68,21 +91,33 @@ impl Address {
         Self::from_numeric(numeric)
     }
 
+    /// The numeric representation of an `Address`. Useful for partitioning the `Node`s in a
+    /// `NodeBucket` into two new buckets.
     pub fn as_numeric(&self) -> num::BigUint {
         num::BigUint::new(self.data.to_vec())
     }
 
+    /// The address space distance of `self` from `other`. Computed as the XOR of their numeric
+    /// representations.
     pub fn distance_from(&self, other: &Self) -> num::BigUint {
         use std::ops::BitXor;
         self.as_numeric().bitxor(other.as_numeric())
     }
 
+    /// The string representation of an `Address`. Useful for displaying, exporting outside of
+    /// Rust, serializing into a protobuf, etc.
+    ///
+    /// TODO: this may be poorly named, breaking the `to_string` convention set by
+    /// `&str::to_string`. It's probably wiser to `impl ToString`.
     pub fn to_str(&self) -> String {
         format!("{:040x}", self.as_numeric())
     }
 }
 
+/// Anything that needs to be uniquely addressed can implement `Addressable`.
 pub trait Addressable {
+
+    /// The `Address` where `self` resides.
     fn address(&self) -> Address;
 }
 

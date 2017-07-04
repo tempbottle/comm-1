@@ -9,6 +9,7 @@ name = "comm"
 
 [[bin]]
 name = "comm"
+doc = false
 
 [[bin]]
 name = "multi"
