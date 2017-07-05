@@ -178,7 +178,6 @@ impl Client {
             self.pending_deliveries.insert(message_id, timeout);
             *delivered += 1;
         }
-        self.broadcast_event(Event::SentTextMessage(text_message));
     }
 
     fn deliver_acknowledgement(&mut self, recipient: Address, acknowledgement: MessageAcknowledgement, _event_loop: &mut mio::EventLoop<Client>) {
@@ -196,7 +195,8 @@ impl Client {
 
         if let Ok(_) = delivered {
             self.pending_deliveries.remove(&text_message.id);
-            self.schedule_message_delivery(recipient, text_message, event_loop);
+            self.schedule_message_delivery(recipient, text_message.clone(), event_loop);
+            self.broadcast_event(Event::SentTextMessage(text_message));
         }
     }
 
