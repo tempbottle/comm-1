@@ -8,29 +8,65 @@ use std::collections::{HashMap, HashSet};
 use std::sync::mpsc;
 use std::thread;
 
+/// A command for the Client to execute immediately.
 #[derive(Debug)]
 pub enum Task {
+
+    /// Handle events emitted by the `Network`, e.g. handling packets that we receive.
     HandleNetworkEvent(network::Event),
+
+    /// Schedules a message to be delivered.
     ScheduleMessageDelivery(Address, TextMessage),
+
+    /// Shuts down the `Client`. When it has completed the shutdown procedure, it will emit an
+    /// `Event::Shutdown`.
     Shutdown
 }
 
+/// A task to be performed some time in the future
 #[derive(Debug)]
 pub enum ScheduledTask {
+
+    /// Deliver a message to an address. This can be a message we are sending to someone else, or
+    /// just a message we're relaying.
     DeliverMessage(Address, TextMessage),
 }
 
+/// Events emitted to any listeners registered with `register_event_listener`. They represent
+/// various client-level events.
 #[derive(Clone, Debug)]
 pub enum Event {
+    /// We've received a message that was addressed to us
     ReceivedTextMessage(TextMessage),
+
+    /// We've sent or relayed a message
     SentTextMessage(TextMessage),
+
+    /// We've received an acknowledgement for a message we sent
     ReceivedMessageAcknowledgement(MessageAcknowledgement),
+
+    /// The client has shut down
+    ///
+    /// TODO: It might be useful for `Shutdown` to contain the serialized state of the entire
+    /// `Client`, `Network`, `RoutingTable`, `Bucket`s and `Nodes` so that a user may store it and
+    /// later re-initialize a `Client` with this state in order to prevent re-bootstrapping from
+    /// scratch.
     Shutdown
 }
 
+/// A sender for issuing commands to the `Client`. Once a client is `run`, it is consumed and
+/// methods cannot be called on it. A `TaskSender` as the asynchronous interface for controlling a
+/// running `Client`.
 pub type TaskSender = mio::Sender<Task>;
+
+/// A receiver for receiving events from a running `Client`. Similar in purpose to `TaskSender`. A
+/// running `Client` is consumed and cannot be queried via method calls. You must instead subscribe
+/// to events it emits
 pub type Events = mpsc::Receiver<Event>;
 
+/// A `Client` handles receiving, processing, relaying, etc. of messages in the communication
+/// network. It internalizes all the complex logic that is specific to messaging, and exposes a few
+/// commands view a `TaskSender` and events via `Events`.
 pub struct Client {
     address: Address,
     network_commands: Option<network::TaskSender>,
@@ -42,6 +78,8 @@ pub struct Client {
 }
 
 impl Client {
+    /// Creates a new `Client`. `address` is the address of this client, i.e. where other clients
+    /// should send messages intended for this client.
     pub fn new(address: Address) -> Client {
         Client {
             address: address,
@@ -54,6 +92,8 @@ impl Client {
         }
     }
 
+    /// Starts a `Client` in its own thread and returns its task sender. This method consumes the
+    /// `Client`, so all event listeners must be registered first.
     pub fn run(mut self, mut network: network::Network) -> TaskSender {
         let mut event_loop = mio::EventLoop::new().unwrap();
         let (event_sender, event_receiver) = mpsc::channel();
@@ -76,6 +116,8 @@ impl Client {
         notify_channel
     }
 
+
+    /// Registers an event listener that should be sent every `Event` the client emits.
     pub fn register_event_listener(&mut self, event_listener: mpsc::Sender<Event>) {
         self.event_listeners.push(event_listener);
     }
