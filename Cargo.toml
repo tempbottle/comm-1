@@ -9,6 +9,7 @@ name = "comm"
 
 [[bin]]
 name = "comm"
+path = "src/main.rs"
 doc = false
 
 [[bin]]
