@@ -32,21 +32,25 @@ structure imposed by each node keeping buckets of nodes at varying distances,
 the message travels in the direction of the recipient, and doesn't flood the
 network as a whole.
 
-Another feature of message delivery is that messages can be stored in the network
-until the recipient is available to receive it. Nodes SHOULD relay a message
-repeatedly, but at longer and longer intervals using exponential backoff.
+A feature of message delivery is that messages can be stored in the network
+until the recipient is available to receive it. This allows you to send a
+message to someone who may be offline, and when they come online, they will
+receive it. Nodes SHOULD relay a message repeatedly, but at longer and longer
+intervals using exponential backoff.
 
 When the recipient finally receives the message, it MUST send an
 acknowledgement back to the sender using the same delivery procedure: relaying.
 The intent is for all intermediary nodes that previously relayed the message to
-now see the acknowledgement. The sender should permanently store this
-acknowledgement with the message so that it may be able to distribute it
-whenever another node tries to send it the (already received) message.
+now see the acknowledgement. This prevents messages from being relayed
+infinitely, even after they've been received. The sender should permanently
+store this acknowledgement with the message so that it may be able to
+distribute it whenever another node tries to send the (already received)
+message.
 
-If a node receives an acknowledgement, it should relay it towards the recipient and 
-temporarily store it. If the node has the message to which the acknowledgement
-pertains to queued to send later (because of repeated relaying), it MUST cancel
-the relaying of said message and MUST NOT relay it again ever.
+If a node receives an acknowledgement, it should relay it towards the recipient
+and temporarily store it. If the node has the message to which the
+acknowledgement pertains queued to send later (because of repeated relaying),
+it MUST cancel the relaying of said message and MUST NOT relay it again ever.
 
 If a node receives a message from another node, and it has an acknowledgement
 for the same message, it MUST relay the acknowledgement to the node that just
