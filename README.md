@@ -3,6 +3,7 @@
 A hypothetical, distributed, encrypted, instant messaging protocol.
 
 * Read the [protocol][protocol] for an overview of how comm works.
+* See the [GTK-based GUI client][comm-gtk]
 
 ## Project Goals
 
@@ -58,4 +59,5 @@ entering its address, followed by a message:
 * [Ensichat](https://github.com/Nutomic/ensichat)
 * [Tox](https://tox.chat/)
 
+[comm-gtk]: https://github.com/zacstewart/comm-gtk
 [protocol]: PROTOCOL.md
