@@ -11,7 +11,7 @@ use std::thread;
 use stun;
 use transaction::{TransactionId, TransactionIdGenerator};
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Event {
     ReceivedPacket(Address, Vec<u8>),
     Shutdown
@@ -111,9 +111,7 @@ impl Network {
                         origin.send(response);
                     },
                     Query::Packet(payload) => {
-                        for listener in &self.event_listeners {
-                            listener.send(Event::ReceivedPacket(origin_address, payload.clone())).unwrap();
-                        }
+                        self.broadcast_event(Event::ReceivedPacket(origin_address, payload));
                         let response = outgoing::create_packet_response(
                             transaction_id, &self.self_node);
                         origin.send(response);
@@ -307,8 +305,12 @@ impl Network {
             sentinel.recv().unwrap();
         }
         event_loop.shutdown();
+        self.broadcast_event(Event::Shutdown);
+    }
+
+    fn broadcast_event(&self, event: Event) {
         for listener in &self.event_listeners {
-            listener.send(Event::Shutdown).unwrap();
+            listener.send(event.clone()).expect("Failed to broadcast event");
         }
     }
 }
