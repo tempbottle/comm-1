@@ -14,7 +14,8 @@ use transaction::{TransactionId, TransactionIdGenerator};
 #[derive(Clone, Debug)]
 pub enum Event {
     ReceivedPacket(Address, Vec<u8>),
-    Shutdown
+    Shutdown,
+    Started
 }
 
 pub enum OneshotTask {
@@ -198,6 +199,7 @@ impl Network {
     fn start_bootstrap(&mut self, event_loop: &mut mio::EventLoop<Handler>) {
         self.status = Status::Bootstrapping;
         self.continue_bootstrap(event_loop);
+        self.broadcast_event(Event::Started);
     }
 
     fn continue_bootstrap(&mut self, event_loop: &mut mio::EventLoop<Handler>) {

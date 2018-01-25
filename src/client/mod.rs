@@ -51,7 +51,12 @@ pub enum Event {
     /// `Client`, `Network`, `RoutingTable`, `Bucket`s and `Nodes` so that a user may store it and
     /// later re-initialize a `Client` with this state in order to prevent re-bootstrapping from
     /// scratch.
-    Shutdown
+    Shutdown,
+
+    /// `Network` has started running. This does not necessary guarantee that we are "connected" to
+    /// the network, because we haven't necessarily sent/received any messages. It just indicates
+    /// that the `Network` is open for business.
+    Started
 }
 
 /// A sender for issuing commands to the `Client`. Once a client is `run`, it is consumed and
@@ -161,9 +166,14 @@ impl Client {
                     }
                 }
             }
+
             network::Event::Shutdown => {
                 event_loop.shutdown();
                 self.broadcast_event(Event::Shutdown);
+            }
+
+            network::Event::Started => {
+                self.broadcast_event(Event::Started);
             }
         }
     }
