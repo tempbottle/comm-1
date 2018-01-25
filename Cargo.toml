@@ -6,11 +6,11 @@ build = "build.rs"
 
 [lib]
 name = "comm"
+path = "src/lib.rs"
 
 [[bin]]
 name = "comm"
 path = "src/main.rs"
-doc = false
 
 [[bin]]
 name = "multi"

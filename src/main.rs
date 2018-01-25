@@ -28,6 +28,15 @@ mod routing_table;
 mod stun;
 mod transaction;
 
+/// Starts a command line client.
+///
+/// Usage:
+///
+///     comm SECRET LOCAL_ADDR BOOTSTRAP_ADDR
+///
+/// Example:
+///
+///     comm alpha 0.0.0.0:6667 10.0.1.13
 fn main() {
     env_logger::init().unwrap();
     let args: Vec<String> = env::args().collect();
