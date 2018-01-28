@@ -12,6 +12,15 @@ use comm::client;
 use comm::network;
 use comm::node;
 
+/// Starts multiple nodes that are all connected to `host`.
+///
+/// Usage:
+///
+///     multi HOST START_PORT END_PORT RAMPUP BOOTSTRAP_ADDR
+///
+/// Example:
+///
+///     multi 0.0.0.0 8000 8100 500 73.207.94.182:6667
 pub fn start_multiple(host: &str, port_start: u16, port_end: u16, router_host: Option<&str>, rampup: u64) {
     let min = 0.to_biguint().unwrap();
     let max = num::pow(2.to_biguint().unwrap(), LENGTH);
