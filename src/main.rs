@@ -47,7 +47,7 @@ fn main() {
 
     let routers: Vec<node::Node> = match args.get(3) {
         Some(router_address) => {
-            let router_node = node::Node::new(Address::null(), router_address.as_str());
+            let router_node = node::Node::from_socket_addrs(Address::null(), router_address.as_str()).unwrap();
             vec![router_node]
         }
         None => vec![]

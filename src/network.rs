@@ -59,7 +59,7 @@ impl Network {
     pub fn new<T: ToSocketAddrs>(self_address: Address, host: T, routers: Vec<Node>) -> Network {
         let host = host.to_socket_addrs().unwrap().next().unwrap();
         let mapped_host = stun::get_mapped_address(host).unwrap();
-        let self_node = Node::new(self_address, mapped_host);
+        let self_node = Node::from_socket_addrs(self_address, mapped_host).unwrap();
         let routing_table = RoutingTable::new(8, self_address, routers);
 
         Network {

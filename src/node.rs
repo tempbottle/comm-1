@@ -18,7 +18,7 @@ pub fn deserialize(message: &messages::protobufs::Node) -> Node {
     let ip = Ipv4Addr::new(ip[0], ip[1], ip[2], ip[3]);
     let port = message.get_port() as u16;
     let address = Address::from_str(message.get_id()).unwrap();
-    Node::new(address, (ip, port))
+    Node::from_socket_addrs(address, (ip, port)).unwrap()
 }
 
 /// Anything that needs to be serialized for transfer or storage.
@@ -63,19 +63,22 @@ pub struct Node {
 }
 
 impl Node {
-    pub fn new<S: ToSocketAddrs>(address: Address, socket_address: S) -> Node {
-        let socket_address = socket_address
-            .to_socket_addrs()
-            .unwrap()
-            .next()
-            .unwrap();
-        Node {
-            address: address,
-            socket_address: socket_address,
-            pending_queries: HashMap::new(),
-            has_ever_responded: false,
-            last_received_query: time::now_utc(),
-            last_received_response: time::now_utc()
+    pub fn from_socket_addrs<S: ToSocketAddrs>(address: Address, socket_address: S) -> Result<Node, String> {
+        match socket_address.to_socket_addrs().ok().and_then(|mut addrs| addrs.next()) {
+            Some(s) => {
+                Ok(Node {
+                    address: address,
+                    socket_address: s,
+                    pending_queries: HashMap::new(),
+                    has_ever_responded: false,
+                    last_received_query: time::now_utc(),
+                    last_received_response: time::now_utc()
+                })
+            }
+
+            None => {
+                Err(String::from("Couldn't parse socket address"))
+            }
         }
     }
 
@@ -262,7 +265,7 @@ pub mod tests {
     #[test]
     fn test_received_response() {
         let address = Address::for_content("some string");
-        let mut node = Node::new(address, ("0.0.0.0", 9000));
+        let mut node = Node::from_socket_addrs(address, ("0.0.0.0", 9000)).unwrap();
 
         // When it's not expecting the response
         node.received_response(1);
@@ -286,7 +289,7 @@ pub mod tests {
         protobuf.set_ip_address(vec![192, 168, 1, 2]);
         protobuf.set_port(9000);
         let address = Address::for_content("some string");
-        let node = Node::new(address, ("192.168.1.2", 9000));
+        let node = Node::from_socket_addrs(address, ("192.168.1.2", 9000)).unwrap();
         assert_eq!(node.serialize(), protobuf);
     }
 }

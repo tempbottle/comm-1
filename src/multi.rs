@@ -32,7 +32,7 @@ pub fn start_multiple(host: &str, port_start: u16, port_end: u16, router_host: O
 
         let routers: Vec<node::Node> = match router_host {
             Some(host) => {
-                let router_node = node::Node::new(Address::null(), host);
+                let router_node = node::Node::from_socket_addrs(Address::null(), host).unwrap();
                 vec![router_node]
             }
             None => vec![]
