@@ -137,6 +137,7 @@ impl Client {
                     Message::TextMessage(text_message) => {
                         if recipient == self.address {
                             if self.received.insert(text_message.id) {
+                                debug!("Received message for me: {:?} via sender {}", &text_message, &sender);
                                 let ack = MessageAcknowledgement::new(text_message.id);
                                 let sender = text_message.sender;
                                 let event = Event::ReceivedTextMessage(text_message);
@@ -145,21 +146,24 @@ impl Client {
                             }
                         } else {
                             if let Some(ack) = self.acknowledgements.remove(&text_message.id) {
+                                debug!("Received already acknowledged message {:?} received via sender {}", &text_message, &sender);
                                 self.deliver_acknowledgement(sender, ack.clone(), event_loop);
                                 self.acknowledgements.insert(text_message.id, ack);
                             } else {
+                                debug!("Received message for {}: {:?} via sender {}", &recipient, &text_message, &sender);
                                 self.schedule_message_delivery(recipient, text_message, event_loop);
                             }
                         }
                     }
                     Message::MessageAcknowledgement(ack) => {
-                        debug!("ack {}", ack.message_id);
                         self.pending_deliveries.remove(&ack.message_id).map(|p| event_loop.clear_timeout(p));
 
                         if let None = self.acknowledgements.insert(ack.message_id, ack.clone()) {
                             if recipient == self.address {
+                                debug!("Received acknowledgement for my message {:?} via {:?}", &ack.message_id, &sender);
                                 self.broadcast_event(Event::ReceivedMessageAcknowledgement(ack));
                             } else {
+                                debug!("Received acknowledgement for {}'s message {:?} via {:?}", &recipient, &ack.message_id, &sender);
                                 self.deliver_acknowledgement(recipient, ack, event_loop);
                             }
                         }
@@ -168,11 +172,13 @@ impl Client {
             }
 
             network::Event::Shutdown => {
+                debug!("Received Shutdown signal from Network");
                 event_loop.shutdown();
                 self.broadcast_event(Event::Shutdown);
             }
 
             network::Event::Started => {
+                debug!("Received Started signal from Network");
                 self.broadcast_event(Event::Started);
             }
         }
@@ -183,7 +189,7 @@ impl Client {
         if !self.pending_deliveries.contains_key(&message_id) {
             let delivered = self.delivered.entry(message_id).or_insert(0);
             let delay = (2u64.pow(*delivered as u32) - 1) * 1000;
-            debug!("Deliver {} with delay {:?}", message_id, delay);
+            debug!("Scheduling delivery of {} in {}ms", &message_id, delay);
             let timeout = event_loop.timeout_ms(ScheduledTask::DeliverMessage(recipient, text_message.clone()), delay).unwrap();
             self.pending_deliveries.insert(message_id, timeout);
             *delivered += 1;
@@ -192,6 +198,7 @@ impl Client {
 
     fn deliver_acknowledgement(&mut self, recipient: Address, acknowledgement: MessageAcknowledgement, _event_loop: &mut mio::EventLoop<Client>) {
         if let Some(ref commands) = self.network_commands {
+            debug!("Delivering acknowledgement {:?} to {}", &acknowledgement, &recipient);
             let envelope = acknowledgement.envelope(recipient);
             commands.send(network::OneshotTask::SendPacket(recipient, envelope.encode())).unwrap();
         }
@@ -199,11 +206,13 @@ impl Client {
 
     fn deliver_message(&mut self, recipient: Address, text_message: TextMessage, event_loop: &mut mio::EventLoop<Client>) {
         let delivered = self.network_commands.as_ref().map(|commands| {
+            debug!("Delivering message {:?} to {}", &text_message, &recipient);
             let envelope = text_message.clone().envelope(recipient);
             commands.send(network::OneshotTask::SendPacket(recipient, envelope.encode()))
         }).unwrap();
 
         if let Ok(_) = delivered {
+            debug!("Adding message {:?} to pending deliveries to be retried", &text_message);
             self.pending_deliveries.remove(&text_message.id);
             self.schedule_message_delivery(recipient, text_message.clone(), event_loop);
             self.broadcast_event(Event::SentTextMessage(text_message));
@@ -217,6 +226,7 @@ impl Client {
     }
 
     fn shutdown(&self, _event_loop: &mut mio::EventLoop<Client>) {
+        debug!("Received Shutdown command from user");
         if let Some(ref commands) = self.network_commands {
             commands.send(network::OneshotTask::Shutdown).unwrap();
         }
