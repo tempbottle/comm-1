@@ -135,8 +135,9 @@ impl Node {
     /// query from a node, this method should be called, passing in the query's `TransactionId`.
     ///
     /// The TID is currently unused, but may be useful in the future.
-    pub fn received_query(&mut self, _: TransactionId) {
+    pub fn received_query(&mut self, transaction_id: TransactionId) {
         self.last_received_query = time::now_utc();
+        debug!("Received query {} from {:?}", &transaction_id, &self);
     }
 
     /// Update the `last_received_response` timestamp if we're indeed waiting for a response to
@@ -146,13 +147,14 @@ impl Node {
     /// method call is ignored and the timestamp is left as is.
     pub fn received_response(&mut self, transaction_id: TransactionId) {
         self.last_received_response = time::now_utc();
-        if let Some(_queried_at) = self.pending_queries.remove(&transaction_id) {
+        if let Some(queried_at) = self.pending_queries.remove(&transaction_id) {
             self.has_ever_responded = true;
-            //let time_to_respond = time::now_utc() - queried_at;
-            //debug!("{} took {:?} to respond", transaction_id, time_to_respond);
+            debug!("Receivd response from {:?} for transaction {} in {}ms",
+                   &self, &transaction_id, time::now_utc() - queried_at);
         } else {
-            debug!("{:?} was not expecting response to {}", self.address, transaction_id);
-            debug!("pending queries: {:?}", self.pending_queries.len());
+            debug!("Received unexpected response from {:?} for transaction {}",
+                   &self, transaction_id);
+            debug!("  pending queries: {:?}", self.pending_queries.len());
         }
     }
 
