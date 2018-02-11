@@ -39,6 +39,7 @@ impl RoutingTable {
         use messages::outgoing;
 
         if node.address() == self.self_address {
+            debug!("Ignored inserting self");
             return Ok(InsertOutcome::Ignored);
         }
 
@@ -62,6 +63,7 @@ impl RoutingTable {
                             transaction_id, self_node);
                         n.sent_query(transaction_id);
                         n.send(query);
+                        debug!("Pinged questionable node {:?}", &n);
                     }
                     Ok(InsertOutcome::Discarded)
                 }

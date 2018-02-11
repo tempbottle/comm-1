@@ -105,6 +105,7 @@ impl Network {
 
                 match query {
                     Query::FindNode(target) => {
+                        debug!("Received FindNode query for {} from {:?}", &target, &origin);
                         let response: Vec<u8> = outgoing::create_find_node_response(
                                 transaction_id,
                                 &self.self_node,
@@ -112,12 +113,14 @@ impl Network {
                         origin.send(response);
                     },
                     Query::Packet(payload) => {
+                        // Logging packets would be too chatty
                         self.broadcast_event(Event::ReceivedPacket(origin_address, payload));
                         let response = outgoing::create_packet_response(
                             transaction_id, &self.self_node);
                         origin.send(response);
                     },
                     Query::Ping => {
+                        debug!("Received Ping from {:?}", &origin);
                         let response = outgoing::create_ping_response(
                             transaction_id,
                             &self.self_node);

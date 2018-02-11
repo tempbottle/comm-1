@@ -1,8 +1,9 @@
 use address::{Address, Addressable};
 use messages;
-use std::net::{SocketAddr, ToSocketAddrs, UdpSocket, IpAddr, Ipv4Addr};
-use std::collections::HashMap;
 use std::cmp;
+use std::collections::HashMap;
+use std::fmt;
+use std::net::{SocketAddr, ToSocketAddrs, UdpSocket, IpAddr, Ipv4Addr};
 use time;
 use transaction::TransactionId;
 
@@ -52,7 +53,6 @@ pub enum Status {
 /// partitioned networks. If a subnetwork is connected via Bluetooth, and at least one participant
 /// has a connection to the larger network, all participants are thereby connected to the larger
 /// network.
-#[derive(Debug)]
 pub struct Node {
     address: Address,
     socket_address: SocketAddr,
@@ -149,7 +149,7 @@ impl Node {
         self.last_received_response = time::now_utc();
         if let Some(queried_at) = self.pending_queries.remove(&transaction_id) {
             self.has_ever_responded = true;
-            debug!("Receivd response from {:?} for transaction {} in {}ms",
+            debug!("Received response from {:?} for transaction {} in {}ms",
                    &self, &transaction_id, time::now_utc() - queried_at);
         } else {
             debug!("Received unexpected response from {:?} for transaction {}",
@@ -216,6 +216,12 @@ impl Serialize for Node {
 impl Addressable for Node {
     fn address(&self) -> Address {
         self.address
+    }
+}
+
+impl fmt::Debug for Node {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Node {{ {}, {} }}", self.address, self.socket_address)
     }
 }
 

@@ -13,7 +13,7 @@ const MINUTES_UNTIL_NEEDS_REFRESH: i64 = 15;
 pub enum InsertOutcome {
     Inserted,   // Inserted new node
     Updated,    // Updated existing node
-    Discarded   // Bucket is full
+    Discarded   // Bucket is full (disregard might be a better name)
 }
 
 pub type InsertionResult = Result<InsertOutcome, String>;
@@ -80,20 +80,24 @@ impl NodeBucket {
         let address = node.address();
         if self.covers(&address) {
             if let Some(pos) = self.addresses.iter().position(|a| a == &address) {
+                let mut existing_node = self.nodes.get_mut(&address).unwrap();
+                debug!("Updated existing node {:?}", &existing_node);
+                existing_node.update_connection(node);
                 self.addresses.remove(pos);
                 self.addresses.insert(0, address);
-                self.nodes.get_mut(&address).unwrap().update_connection(node);
                 self.last_inserted = time::now_utc();
                 Ok(InsertOutcome::Updated)
             } else if !self.is_full() {
-                self.addresses.insert(0, address);
+                debug!("Inserted new node {:?}", &node);
                 self.nodes.insert(address, node);
+                self.addresses.insert(0, address);
                 self.last_inserted = time::now_utc();
                 Ok(InsertOutcome::Inserted)
             } else if self.any_bad_nodes() {
                 self.remove_worst_node();
                 self.insert(node)
             } else {
+                debug!("Discarded node {:?}", &node);
                 Ok(InsertOutcome::Discarded)
             }
         } else {
@@ -123,9 +127,10 @@ impl NodeBucket {
     }
 
     fn remove(&mut self, address: &Address) {
-        self.nodes.remove(address);
+        let removed_node = self.nodes.remove(address).unwrap();
         let pos = self.addresses.iter().position(|a| a == address).unwrap();
         self.addresses.remove(pos);
+        debug!("Removed node {:?}", &removed_node);
     }
 
     pub fn remove_worst_node(&mut self) {
@@ -133,11 +138,13 @@ impl NodeBucket {
                 .filter(|&(_, n)| n.is_bad())
                 .max_by_key(|&(_, n)| n.pending_query_count())
                 .map(|(a, _)| a.clone()) {
-            self.remove(&to_remove)
+            self.remove(&to_remove);
+            debug!("Removed worst node {:?}", &to_remove);
         }
     }
 
     pub fn split(self) -> (Self, Self) {
+        debug!("Split bucket {:?}", &self);
         let difference = &self.max - &self.min;
         let partition = difference / 2.to_biguint().unwrap() + &self.min;
         let (a_addresses, b_addresses) = self.addresses
