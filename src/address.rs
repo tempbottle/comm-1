@@ -32,8 +32,11 @@ impl Address {
     /// # Example
     ///
     /// ```
+    /// use comm::address;
+    ///
     /// let addr = address::Address::for_content("alep");
-    /// assert_eq!(addr, address::Address::from_str("44751799925b964a00bae3863cc4236f9bb8d519"));
+    /// let addr_from_str = address::Address::from_str("44751799925b964a00bae3863cc4236f9bb8d519").unwrap();
+    /// assert_eq!(addr, addr_from_str);
     /// ```
     pub fn for_content(content: &str) -> Address {
         let mut hasher = Sha1::new();
