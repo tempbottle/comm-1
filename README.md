@@ -53,6 +53,12 @@ entering its address, followed by a message:
 
     44751799925b964a00bae3863cc4236f9bb8d519 Hi there!
 
+## Documentation
+
+Documenation is still forthcoming, but many of the modules have doc comments.
+I'm still trying to figure out a good way to host rust docs out of GitHub
+Pages.
+
 # Similar Projects
 
 * [Briar](https://briarproject.org/)
