@@ -1,0 +1,130 @@
+Routing Strategies for Delay-Tolerant Networks
+    - messages forwarded by intermediary nodes
+    - unreliable links and nodes
+    - multiple hops
+    - also moving nodes like busses
+    - replication: how a routing strategy relies on multiple copies of each messag
+    - knowledge: how much knowledge about the network is used to make decisions
+    - flooding strategies: deliver multiple copies of message to multiple relays, which forward when they connect to destination, usually no network knowledge, good for random networks
+        - direct contact:       wait until source and dest are connected, then transfer data (unlikely to work)
+        - two-hop relay:        store message on source and n relays, deliver to destination when connected (doesn't reach far)
+            -> why not combine this with node discovery?
+        - tree-based flooding:  extension of two-hop relay, each relay forwards to given number of other nodes (difficult parameter tuning)
+        - epidemic routing:     when nodes connect, exchange all messages (very inefficient)
+    - forwarding strategies: use info about network topology to transfer along best path, ususally no replication, good for scheduled networks
+        - location-based routing:   forward message to node with coordinates closer to dest (bad with moving nodes)
+        - gradient routing:         assign weight to nodes for suitability to deliver to each dest (needs to know network topology)
+        - link metrics:             build topology graph, run path finding algorithm (needs lots of knowledge)
+    - only considers strategies that use either knowledge or replication, not both, those would be better (Fig. 9)
+    - notes that actual implementations are important, and that impls need to work over multiple types of networks (yay!)
+    - conclusion: should use hybrid technique for real world, need to find right balance
+
+Routing Protocols in Delay Tolerant Networks: A Comparative Survey
+    - DNT: occasionally connected, frequent partitions and long delay, no end-to-end connectivity, changing network topology
+    - Key Properties: high latency, (low data rate), disconnection, long queuing delay, limited longevity of nodes, limited resources (battery, storage)
+    - Routing Objectives: maximize probability of msg delivery, minimize resource usage, minimize delay
+    - must balance maximizing message delivery and minimizing resource usage, eg decide how many copies should be made
+    - need big buffer space for messages in transit
+    - destination should acknowledge message received to source
+        -> if we don't get this after some time, we can resend
+    - routing protocol needs to be energy efficient (for phones)
+    - security, as message passes untrusted nodes (more or less handled already)
+    - flooding families:
+        - prioritized epidemic routing: metrics like cost to dest/from source to decide forwarding
+        - Probabilistic routing: when another node is encountered, forward message if random number is greater than threshold
+        - RUNES: likelihood of message drop depends on distance to source/dest (further from both -> likely to be dropped)
+    - forwarding families:
+        - source routing: only source node determines the message path, fails if topology changes
+        - Per-Hop Routing: intermediary node decides next hop when it receives a message, places it in queue for that node
+        - Per-Contact Routing: don't decide next hop when message received, but when other node encountered (could result in loops)
+        - Hierarchical Routing: ???
+    - comparison table
+        best flooding: Prioritized epidemic routing, Probabilistic routing
+        best forwarding: Hierarchical routing
+
+Routing for disruption-tolerant networks: taxonomy and design
+    - deterministic routing solutions: contact information is known before, can use message ferries
+    - epidemic routing is to episodically connected environments what flooding is to traditional well-connected networks
+    - basic building blocks: message replication, forwarding, source and network coding
+    - "node mobility has been shown to increase capacity of connected wireless networks" (with citation)
+    - multicast/broadcast applications require different routing strategies
+    - strategies:
+        - Epidemic routing: possibly with priorization
+        - Controlled replication: maximum number of message copies, time-limited replication, probability-limited replication
+        - Utility-based replication: decide other node's utility/fitness (eg server=high fitness), can use number of previous encounters of relay with target as fitness metric
+        - message forwarding: hand message over and delete local copy
+        - message coding: which node decides the exact route for a message? source, or all intermediaries?
+        - Routing as resource allocation: decide based on message priority how many resources should be used, or minimze average transmission time
+    - utility functions:
+        - destination dependent utility: decide on best relay based on past encounters with destination, or location info, friends info
+        - Destination independent utility: choose relay based on relay attributes like mobility, resources, trustworthiness, uptime
+        - discussion about how various factors affect routing alg, like node position/clustering, mobility, resources, application requirements
+        - "the higher the average node mobility, the less sophisticated the design of a protocol needs to be"
+    - according to comparison, best algos for our use case are Spray and Focus or Smart Replicate (but no reference for this)
+
+Spray and Wait: An Efficient Routing Scheme for Intermittently Connected Mobile Networks
+    - intermittently connected = no connection for most of the time
+    - bounds number of copies and transmissions without compromising performance, highly scalable
+    - uses randomized flooding
+    - single-copy schemes not desirable for high chance of delivery and low delay
+    - algorithm:
+        1. spray phase: messages are forwarded to constant number of relays L
+        2. if destination not found, relays will forward message only to destination
+    - binary spreading, gives half of L to first contact, keeps other half
+    - assumes equal nodes
+        -> we could prioritize servers by measuring uptime and/or connections
+    - assumes only direct connection between nodes
+    - includes (somewhat complicated) algo to compute L dynamically on device
+        -> how does this work with always connected internet nodes?
+    - extremely scalable, more nodes means less transmissions per node
+    -> very simple and efficient protocol, sounds good for our use case
+
+Spray and focus: Efficient mobility-assisted routing for heterogeneous and correlated mobility
+    - improvement over spray and wait, where node movement may be limited to small local area
+    - relays can forward message copy to node that is more likely to encounter destination
+    - same spraying strategy as spray and wait
+    - focus phase: optionally forward copy to node if it has encountered the destination more recently
+    - time should be stored transitively, for routing over intermediary nodes
+    - up to 20x performance improvement over spray and wait, but does not consider internet transmission
+    -> better than spray and wait, but we should implement that because it's simpler, and see if that's enough
+
+Practical Routing in Delay-Tolerant Networks
+    - uses epidemic routing for network info, recomputed every time connections are established
+    - better than epidemic routing, about 100 nodes
+    - goals: easy to deploy and maintain, works even when components fail, sufficient performance over variety of conn patterns, efficient
+    - needs bidirectional transfer
+    - other terms for "delay-tolerant" networks: "intermittently-connected", "sparse", "disconnected"
+    - really complex (or just long explanation?)
+    - uses per-contact routing based on available links
+    - high overhead and complexity of protcol state exchange
+    -> too complicated
+
+AODVv2
+    - simpler than AODV, primary functions are route discovery and maintenance
+    - reactive routing uses Route Request (RREQ) Route Reply (RREP) and Route Error (RERR) messages
+    - sequence numbers to identifu stale routes and prevent loops
+    - best suited for sparse traffic scenarios
+    - if route to dest isn't known, tries to find one and waits for replies
+    - if no reply is found, uses binary exponential backoff, RREQ_WAIT_TIME (default = 2s) is multiplied by 2 after each attempt, up to DISCOVERY_ATTEMPTS_MAX (default = 3) -> 8s max
+    - if no route discovered then, packet dropped and wait at least RREQ_HOLDDOWN_TIME (default = 10s) before new discovery for same dest
+
+Scalable routing in delay tolerant networks
+    - uses a model with predictable and with persistent contacts
+    - uses Hierarchical routing
+    -> not applicable at all
+
+Routing in Delay-Tolerant Networks Comprising Heterogeneous Node Populations
+    - improvement over spray and wait, aims for predictable resource usage, good delay and delivery ratio
+    - assumes heterogeneous nodes
+    - "given a fixed budget of message copies, how can we best allocate it to a network consisting of nodes with varying capabilities and behaviors?"
+    - uses utility-based replication for choosing relays, up to 5 times better than greedy replication
+    - assumes different mobility classes for nodes
+    - spraying utility functions:
+        Last-Seen-First: destination-dependent, send to nodes that have seen dest most recently, can be faked by relays
+        Most-Mobile-First: destination-independent, send to nodes with specific label first (eg labels server, phone)
+        Most-Social-First: destination-independent, each node maintains sliding window average of unique encounters, can be faked
+        could consider battery level and storage level for utility
+    - "if a malicious node decides to advertise a very high (fake) utility value, it can easily absorb a large number of messages."
+    - proofs for routing performance
+    -> we should use a utility function to choose relays
+ 

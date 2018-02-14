@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `Node` struct in crate `comm`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, Node">
+
+    <title>comm::node::Node - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc struct">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'>Struct Node</p><div class="block items"><a class="sidebar-title" href="#methods">Methods</a><div class="sidebar-links"><a href="#method.from_socket_addrs">from_socket_addrs</a><a href="#method.is_bad">is_bad</a><a href="#method.is_questionable">is_questionable</a><a href="#method.last_seen">last_seen</a><a href="#method.pending_query_count">pending_query_count</a><a href="#method.received_query">received_query</a><a href="#method.received_response">received_response</a><a href="#method.send">send</a><a href="#method.sent_query">sent_query</a><a href="#method.update_connection">update_connection</a></div><a class="sidebar-title" href="#implementations">Trait Implementations</a><div class="sidebar-links"><a href="#impl-PartialEq">PartialEq</a><a href="#impl-Serialize">Serialize</a><a href="#impl-Addressable">Addressable</a><a href="#impl-Debug">Debug</a></div></div><p class='location'><a href='../index.html'>comm</a>::<wbr><a href='index.html'>node</a></p><script>window.sidebarCurrent = {name: 'Node', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>comm</a>::<wbr><a href='index.html'>node</a>::<wbr><a class="struct" href=''>Node</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../../src/comm/node.rs.html#56-63' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct Node { /* fields omitted */ }</pre><div class='docblock'><p>A <code>Node</code> is a peer in the network. It represents another network participant such as ourself.
+It has an address, and a means to be sent messages. When we receive messages, they come from
+other nodes.</p>
+
+<p>Currently, a node is connected via UDP socket, but in a future iteration, a Node will be
+decoupled from the underlying connection method. A Node semantically represents a
+&quot;participant,&quot; i.e. a person, robot, agent, etc. Not a single device, or single IP address.</p>
+
+<p>That participant may be connected to the network via a variety of means. Most common would be
+over the internet via UDP, but it could very well include more connections via LAN, Bluetooth,
+shortwave radio, signal lamp, or any other medium that can transmit packets.</p>
+
+<p>This in an important feature to the goals of comm. The comm network should be able to overlay
+partitioned networks. If a subnetwork is connected via Bluetooth, and at least one participant
+has a connection to the larger network, all participants are thereby connected to the larger
+network.</p>
+</div>
+                    <h2 id='methods' class='small-section-header'>
+                      Methods<a href='#methods' class='anchor'></a>
+                    </h2>
+                <h3 id='impl' class='impl'><span class='in-band'><code>impl <a class="struct" href="../../comm/node/struct.Node.html" title="struct comm::node::Node">Node</a></code><a href='#impl' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/node.rs.html#65-191' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.from_socket_addrs' class="method"><span id='from_socket_addrs.v' class='invisible'><code>pub fn <a href='#method.from_socket_addrs' class='fnname'>from_socket_addrs</a>&lt;S:&nbsp;<a class="trait" href="https://doc.rust-lang.org/nightly/std/net/addr/trait.ToSocketAddrs.html" title="trait std::net::addr::ToSocketAddrs">ToSocketAddrs</a>&gt;(<br>&nbsp;&nbsp;&nbsp;&nbsp;address: <a class="struct" href="../../comm/address/struct.Address.html" title="struct comm::address::Address">Address</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;socket_address: S<br>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="../../comm/node/struct.Node.html" title="struct comm::node::Node">Node</a>, <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/node.rs.html#66-83' title='goto source code'>[src]</a></span></h4>
+<h4 id='method.is_bad' class="method"><span id='is_bad.v' class='invisible'><code>pub fn <a href='#method.is_bad' class='fnname'>is_bad</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/node.rs.html#112-114' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Whether the node should be considered bad or unreliable. A bad node has not been heard from
+in the last <code>MINUTES_UNTIL_QUESTIONABLE</code> minutes, and hasn&#39;t responded to at least
+<code>FAILED_TO_RESPOND_THRESHOLD</code> queries.</p>
+
+<p>Generally, a bad node SHOULD NOT be sent queries, since it&#39;s likely to be a waste of
+network traffic. However, the node should not forgotten until its bucket is full, cannot be
+split, and a new node is being inserted into it. At that point, it&#39;s advantageous to remove
+the worst node from the bucket and insert another in its place.</p>
+
+<p>If a bad node begins responding to queries, it can become good again. The goal is to
+minimize wasted network traffic, but also to minimize network volatility. Repeatedly
+ejecting and reintroducing flaky nodes makes for a volatile network.</p>
+
+<p>TODO: Should we forgive a bad node&#39;s <code>pending_query_count()</code> if it becomes good again?</p>
+</div><h4 id='method.is_questionable' class="method"><span id='is_questionable.v' class='invisible'><code>pub fn <a href='#method.is_questionable' class='fnname'>is_questionable</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/node.rs.html#120-122' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Whether the node is questionable and should therefore be pinged. A questionable node SHOULD
+still be sent relevant queries, and SHOULD be given every benefit of being treated as if it
+were good. Questionable only means that we don&#39;t know whether it&#39;s still good, and we
+should ask it.</p>
+</div><h4 id='method.last_seen' class="method"><span id='last_seen.v' class='invisible'><code>pub fn <a href='#method.last_seen' class='fnname'>last_seen</a>(&amp;self) -&gt; <a class="struct" href="../../time/struct.Tm.html" title="struct time::Tm">Tm</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/node.rs.html#125-127' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>The last time we received either a query or a response from a node.</p>
+</div><h4 id='method.pending_query_count' class="method"><span id='pending_query_count.v' class='invisible'><code>pub fn <a href='#method.pending_query_count' class='fnname'>pending_query_count</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/node.rs.html#130-132' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>How many unanswered queries we&#39;ve sent to a node.</p>
+</div><h4 id='method.received_query' class="method"><span id='received_query.v' class='invisible'><code>pub fn <a href='#method.received_query' class='fnname'>received_query</a>(&amp;mut self, transaction_id: <a class="type" href="../../comm/transaction/type.TransactionId.html" title="type comm::transaction::TransactionId">TransactionId</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/node.rs.html#138-141' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Update the <code>last_received_query</code> timestamp for a node. Any time the network receives a
+query from a node, this method should be called, passing in the query&#39;s <code>TransactionId</code>.</p>
+
+<p>The TID is currently unused, but may be useful in the future.</p>
+</div><h4 id='method.received_response' class="method"><span id='received_response.v' class='invisible'><code>pub fn <a href='#method.received_response' class='fnname'>received_response</a>(&amp;mut self, transaction_id: <a class="type" href="../../comm/transaction/type.TransactionId.html" title="type comm::transaction::TransactionId">TransactionId</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/node.rs.html#148-159' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Update the <code>last_received_response</code> timestamp if we&#39;re indeed waiting for a response to
+a query we previously sent with a TID of <code>transaction_id</code>.</p>
+
+<p>If we&#39;re not expecting a response from this node for a query we sent previously, this
+method call is ignored and the timestamp is left as is.</p>
+</div><h4 id='method.send' class="method"><span id='send.v' class='invisible'><code>pub fn <a href='#method.send' class='fnname'>send</a>(&amp;self, message: <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>&gt;)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/node.rs.html#165-168' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Send an encoded message to a node via its UDP socket.</p>
+
+<p>In the future, a node will support numerous connection types, and it should be send using
+all connections that are live (i.e. not bad)</p>
+</div><h4 id='method.sent_query' class="method"><span id='sent_query.v' class='invisible'><code>pub fn <a href='#method.sent_query' class='fnname'>sent_query</a>(&amp;mut self, transaction_id: <a class="type" href="../../comm/transaction/type.TransactionId.html" title="type comm::transaction::TransactionId">TransactionId</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/node.rs.html#174-176' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Records that we&#39;re expecting a response from this node for the TID <code>transaction_id</code>.</p>
+
+<p>TODO: Perhaps this method should be rolled together with a method like <code>send_query</code> that
+records the TID and calls <code>send</code>.</p>
+</div><h4 id='method.update_connection' class="method"><span id='update_connection.v' class='invisible'><code>pub fn <a href='#method.update_connection' class='fnname'>update_connection</a>(&amp;mut self, other_node: Self)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/node.rs.html#188-190' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Update the socket address and port of a node. This is useful for when a node disconnects
+and reconnects to the internet, or changes IP addresses, etc.</p>
+
+<p>In the future, a node will have n connections instead of one socket address, and we&#39;d just
+add another to the set, and keep track of which are good, eventually ejecting dead
+connections.</p>
+
+<p>TODO: this is a temporary measure until a node can support multiple connections. Rather
+than updating its only connection, it should just add another to the set and keep track of
+the most reliable connection.</p>
+</div></div>
+            <h2 id='implementations' class='small-section-header'>
+              Trait Implementations<a href='#implementations' class='anchor'></a>
+            </h2>
+        <h3 id='impl-PartialEq' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html" title="trait core::cmp::PartialEq">PartialEq</a> for <a class="struct" href="../../comm/node/struct.Node.html" title="struct comm::node::Node">Node</a></code><a href='#impl-PartialEq' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/node.rs.html#193-197' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.eq' class="method"><span id='eq.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#tymethod.eq' class='fnname'>eq</a>(&amp;self, other: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/node.rs.html#194-196' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>This method tests for <code>self</code> and <code>other</code> values to be equal, and is used by <code>==</code>. <a href="https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#tymethod.eq">Read more</a></p>
+</div><h4 id='method.ne' class="method"><span id='ne.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#method.ne' class='fnname'>ne</a>(&amp;self, other: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Rhs) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a></code></span><span class='out-of-band'><div class='ghost'></div><div class='since' title='Stable since Rust version 1.0.0'>1.0.0</div><a class='srclink' href='https://doc.rust-lang.org/nightly/src/core/cmp.rs.html#121' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>This method tests for <code>!=</code>.</p>
+</div></div><h3 id='impl-Serialize' class='impl'><span class='in-band'><code>impl <a class="trait" href="../../comm/node/trait.Serialize.html" title="trait comm::node::Serialize">Serialize</a> for <a class="struct" href="../../comm/node/struct.Node.html" title="struct comm::node::Node">Node</a></code><a href='#impl-Serialize' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/node.rs.html#199-214' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.serialize' class="method"><span id='serialize.v' class='invisible'><code>fn <a href='../../comm/node/trait.Serialize.html#tymethod.serialize' class='fnname'>serialize</a>(&amp;self) -&gt; <a class="struct" href="../../comm/messages/protobufs/struct.Node.html" title="struct comm::messages::protobufs::Node">Node</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/node.rs.html#200-213' title='goto source code'>[src]</a></span></h4>
+</div><h3 id='impl-Addressable' class='impl'><span class='in-band'><code>impl <a class="trait" href="../../comm/address/trait.Addressable.html" title="trait comm::address::Addressable">Addressable</a> for <a class="struct" href="../../comm/node/struct.Node.html" title="struct comm::node::Node">Node</a></code><a href='#impl-Addressable' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/node.rs.html#216-220' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.address' class="method"><span id='address.v' class='invisible'><code>fn <a href='../../comm/address/trait.Addressable.html#tymethod.address' class='fnname'>address</a>(&amp;self) -&gt; <a class="struct" href="../../comm/address/struct.Address.html" title="struct comm::address::Address">Address</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/node.rs.html#217-219' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>The <code>Address</code> where <code>self</code> resides.</p>
+</div></div><h3 id='impl-Debug' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html" title="trait core::fmt::Debug">Debug</a> for <a class="struct" href="../../comm/node/struct.Node.html" title="struct comm::node::Node">Node</a></code><a href='#impl-Debug' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/node.rs.html#222-226' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.fmt' class="method"><span id='fmt.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, f: &amp;mut <a class="struct" href="https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html" title="struct core::fmt::Formatter">Formatter</a>) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/core/fmt/type.Result.html" title="type core::fmt::Result">Result</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/node.rs.html#223-225' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Formats the value using the given formatter. <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt">Read more</a></p>
+</div></div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>↑</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>↓</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>↹</dt>
+                    <dd>Switch tab</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt style="width:31px;">+ / -</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "comm";
+    </script>
+    <script src="../../main.js"></script>
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>

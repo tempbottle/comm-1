@@ -1,0 +1,2 @@
+[libprotobuf WARNING google/protobuf/compiler/parser.cc:546] No syntax specified for the proto file: src/messages/protobufs.proto. Please use 'syntax = "proto2";' or 'syntax = "proto3";' to specify a syntax version. (Defaulted to proto2 syntax.)
+[libprotobuf WARNING google/protobuf/compiler/parser.cc:546] No syntax specified for the proto file: src/client/messages/protobufs.proto. Please use 'syntax = "proto2";' or 'syntax = "proto3";' to specify a syntax version. (Defaulted to proto2 syntax.)

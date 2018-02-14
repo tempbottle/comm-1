@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `Address` struct in crate `comm`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, Address">
+
+    <title>comm::address::Address - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc struct">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'>Struct Address</p><div class="block items"><a class="sidebar-title" href="#methods">Methods</a><div class="sidebar-links"><a href="#method.for_content">for_content</a><a href="#method.from_numeric">from_numeric</a><a href="#method.from_str">from_str</a><a href="#method.null">null</a><a href="#method.random">random</a><a href="#method.as_numeric">as_numeric</a><a href="#method.distance_from">distance_from</a><a href="#method.to_str">to_str</a></div><a class="sidebar-title" href="#implementations">Trait Implementations</a><div class="sidebar-links"><a href="#impl-Clone">Clone</a><a href="#impl-Copy">Copy</a><a href="#impl-Eq">Eq</a><a href="#impl-Hash">Hash</a><a href="#impl-PartialEq">PartialEq</a><a href="#impl-Debug">Debug</a><a href="#impl-Display">Display</a></div></div><p class='location'><a href='../index.html'>comm</a>::<wbr><a href='index.html'>address</a></p><script>window.sidebarCurrent = {name: 'Address', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>comm</a>::<wbr><a href='index.html'>address</a>::<wbr><a class="struct" href=''>Address</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../../src/comm/address.rs.html#23-25' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct Address { /* fields omitted */ }</pre><div class='docblock'><p>An <code>Address</code> can be used to address anything that is <code>Addressable</code>. <code>Node</code>s, for example, have
+an <code>Address</code>. Every <code>client::messages::TextMessage</code> has an <code>Address</code> as well.</p>
+</div>
+                    <h2 id='methods' class='small-section-header'>
+                      Methods<a href='#methods' class='anchor'></a>
+                    </h2>
+                <h3 id='impl' class='impl'><span class='in-band'><code>impl <a class="struct" href="../../comm/address/struct.Address.html" title="struct comm::address::Address">Address</a></code><a href='#impl' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/address.rs.html#27-118' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.for_content' class="method"><span id='for_content.v' class='invisible'><code>pub fn <a href='#method.for_content' class='fnname'>for_content</a>(content: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="struct" href="../../comm/address/struct.Address.html" title="struct comm::address::Address">Address</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/address.rs.html#41-49' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Hashes <code>content</code> into an <code>Address</code>. Current implementation is to take the SHA1 digest of
+<code>content</code>, but this is subject to change and should not be depended on.</p>
+
+<h1 id='example' class='section-header'><a href='#example'>Example</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">comm</span>::<span class="ident">address</span>;
+
+<span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span> <span class="ident">address</span>::<span class="ident">Address</span>::<span class="ident">for_content</span>(<span class="string">&quot;alep&quot;</span>);
+<span class="kw">let</span> <span class="ident">addr_from_str</span> <span class="op">=</span> <span class="ident">address</span>::<span class="ident">Address</span>::<span class="ident">from_str</span>(<span class="string">&quot;44751799925b964a00bae3863cc4236f9bb8d519&quot;</span>).<span class="ident">unwrap</span>();
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">addr</span>, <span class="ident">addr_from_str</span>);</pre>
+</div><h4 id='method.from_numeric' class="method"><span id='from_numeric.v' class='invisible'><code>pub fn <a href='#method.from_numeric' class='fnname'>from_numeric</a>(numeric: <a class="struct" href="../../num_bigint/biguint/struct.BigUint.html" title="struct num_bigint::biguint::BigUint">BigUint</a>) -&gt; <a class="struct" href="../../comm/address/struct.Address.html" title="struct comm::address::Address">Address</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/address.rs.html#53-58' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Creates an <code>Address</code> from its numeric representation. Useful for randomly generating
+<code>Address</code>es within a range.</p>
+</div><h4 id='method.from_str' class="method"><span id='from_str.v' class='invisible'><code>pub fn <a href='#method.from_str' class='fnname'>from_str</a>(string: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="../../comm/address/struct.Address.html" title="struct comm::address::Address">Address</a>, <a class="enum" href="../../rustc_serialize/hex/enum.FromHexError.html" title="enum rustc_serialize::hex::FromHexError">FromHexError</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/address.rs.html#62-73' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Creates a <code>Address</code> from its hexidecimal string representation. <code>string</code> must be
+hexidecimal or an <code>Err</code> will be returned.</p>
+</div><h4 id='method.null' class="method"><span id='null.v' class='invisible'><code>pub fn <a href='#method.null' class='fnname'>null</a>() -&gt; <a class="struct" href="../../comm/address/struct.Address.html" title="struct comm::address::Address">Address</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/address.rs.html#79-83' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>The null <code>Address</code>. Use to address &quot;nothing.&quot; No <code>Node</code>, message, or any <code>Addressable</code>
+thing should ever reside at the null address. It&#39;s useful for bootstrapping a
+<code>network::Network</code> when one does not know the address of any peers, but has connection
+details to them such as an IP address and port.</p>
+</div><h4 id='method.random' class="method"><span id='random.v' class='invisible'><code>pub fn <a href='#method.random' class='fnname'>random</a>(min: &amp;<a class="struct" href="../../num_bigint/biguint/struct.BigUint.html" title="struct num_bigint::biguint::BigUint">BigUint</a>, max: &amp;<a class="struct" href="../../num_bigint/biguint/struct.BigUint.html" title="struct num_bigint::biguint::BigUint">BigUint</a>) -&gt; <a class="struct" href="../../comm/address/struct.Address.html" title="struct comm::address::Address">Address</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/address.rs.html#88-95' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Randomly generates an <code>Address</code> within the address space between <code>min</code> and <code>max</code>. Useful
+for refreshing a <code>NodeBucket</code> by performing a find node operation on a random address
+within its range.</p>
+</div><h4 id='method.as_numeric' class="method"><span id='as_numeric.v' class='invisible'><code>pub fn <a href='#method.as_numeric' class='fnname'>as_numeric</a>(&amp;self) -&gt; <a class="struct" href="../../num_bigint/biguint/struct.BigUint.html" title="struct num_bigint::biguint::BigUint">BigUint</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/address.rs.html#99-101' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>The numeric representation of an <code>Address</code>. Useful for partitioning the <code>Node</code>s in a
+<code>NodeBucket</code> into two new buckets.</p>
+</div><h4 id='method.distance_from' class="method"><span id='distance_from.v' class='invisible'><code>pub fn <a href='#method.distance_from' class='fnname'>distance_from</a>(&amp;self, other: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self) -&gt; <a class="struct" href="../../num_bigint/biguint/struct.BigUint.html" title="struct num_bigint::biguint::BigUint">BigUint</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/address.rs.html#105-108' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>The address space distance of <code>self</code> from <code>other</code>. Computed as the XOR of their numeric
+representations.</p>
+</div><h4 id='method.to_str' class="method"><span id='to_str.v' class='invisible'><code>pub fn <a href='#method.to_str' class='fnname'>to_str</a>(&amp;self) -&gt; <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/address.rs.html#115-117' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>The string representation of an <code>Address</code>. Useful for displaying, exporting outside of
+Rust, serializing into a protobuf, etc.</p>
+
+<p>TODO: this may be poorly named, breaking the <code>to_string</code> convention set by
+<code>&amp;str::to_string</code>. It&#39;s probably wiser to <code>impl ToString</code>.</p>
+</div></div>
+            <h2 id='implementations' class='small-section-header'>
+              Trait Implementations<a href='#implementations' class='anchor'></a>
+            </h2>
+        <h3 id='impl-Clone' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a> for <a class="struct" href="../../comm/address/struct.Address.html" title="struct comm::address::Address">Address</a></code><a href='#impl-Clone' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/address.rs.html#22' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.clone' class="method"><span id='clone.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone' class='fnname'>clone</a>(&amp;self) -&gt; <a class="struct" href="../../comm/address/struct.Address.html" title="struct comm::address::Address">Address</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/address.rs.html#22' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Returns a copy of the value. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone">Read more</a></p>
+</div><h4 id='method.clone_from' class="method"><span id='clone_from.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from' class='fnname'>clone_from</a>(&amp;mut self, source: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self)</code></span><span class='out-of-band'><div class='ghost'></div><div class='since' title='Stable since Rust version 1.0.0'>1.0.0</div><a class='srclink' href='https://doc.rust-lang.org/nightly/src/core/clone.rs.html#112-114' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Performs copy-assignment from <code>source</code>. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from">Read more</a></p>
+</div></div><h3 id='impl-Copy' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html" title="trait core::marker::Copy">Copy</a> for <a class="struct" href="../../comm/address/struct.Address.html" title="struct comm::address::Address">Address</a></code><a href='#impl-Copy' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/address.rs.html#22' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'></div><h3 id='impl-Eq' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/cmp/trait.Eq.html" title="trait core::cmp::Eq">Eq</a> for <a class="struct" href="../../comm/address/struct.Address.html" title="struct comm::address::Address">Address</a></code><a href='#impl-Eq' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/address.rs.html#22' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'></div><h3 id='impl-Hash' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/hash/trait.Hash.html" title="trait core::hash::Hash">Hash</a> for <a class="struct" href="../../comm/address/struct.Address.html" title="struct comm::address::Address">Address</a></code><a href='#impl-Hash' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/address.rs.html#22' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.hash' class="method"><span id='hash.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/hash/trait.Hash.html#tymethod.hash' class='fnname'>hash</a>&lt;__H:&nbsp;<a class="trait" href="https://doc.rust-lang.org/nightly/core/hash/trait.Hasher.html" title="trait core::hash::Hasher">Hasher</a>&gt;(&amp;self, __arg_0: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;mut </a>__H)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/address.rs.html#22' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Feeds this value into the given [<code>Hasher</code>]. <a href="https://doc.rust-lang.org/nightly/core/hash/trait.Hash.html#tymethod.hash">Read more</a></p>
+</div><h4 id='method.hash_slice' class="method"><span id='hash_slice.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/hash/trait.Hash.html#method.hash_slice' class='fnname'>hash_slice</a>&lt;H&gt;(data: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">&amp;[Self]</a>, state: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;mut </a>H) <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;H: <a class="trait" href="https://doc.rust-lang.org/nightly/core/hash/trait.Hasher.html" title="trait core::hash::Hasher">Hasher</a>,&nbsp;</span></code></span><span class='out-of-band'><div class='ghost'></div><div class='since' title='Stable since Rust version 1.3.0'>1.3.0</div><a class='srclink' href='https://doc.rust-lang.org/nightly/src/core/hash/mod.rs.html#202-208' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Feeds a slice of this type into the given [<code>Hasher</code>]. <a href="https://doc.rust-lang.org/nightly/core/hash/trait.Hash.html#method.hash_slice">Read more</a></p>
+</div></div><h3 id='impl-PartialEq' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html" title="trait core::cmp::PartialEq">PartialEq</a> for <a class="struct" href="../../comm/address/struct.Address.html" title="struct comm::address::Address">Address</a></code><a href='#impl-PartialEq' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/address.rs.html#22' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.eq' class="method"><span id='eq.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#tymethod.eq' class='fnname'>eq</a>(&amp;self, __arg_0: &amp;<a class="struct" href="../../comm/address/struct.Address.html" title="struct comm::address::Address">Address</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/address.rs.html#22' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>This method tests for <code>self</code> and <code>other</code> values to be equal, and is used by <code>==</code>. <a href="https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#tymethod.eq">Read more</a></p>
+</div><h4 id='method.ne' class="method"><span id='ne.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#method.ne' class='fnname'>ne</a>(&amp;self, __arg_0: &amp;<a class="struct" href="../../comm/address/struct.Address.html" title="struct comm::address::Address">Address</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/address.rs.html#22' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>This method tests for <code>!=</code>.</p>
+</div></div><h3 id='impl-Debug' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html" title="trait core::fmt::Debug">Debug</a> for <a class="struct" href="../../comm/address/struct.Address.html" title="struct comm::address::Address">Address</a></code><a href='#impl-Debug' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/address.rs.html#127-131' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.fmt' class="method"><span id='fmt.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, f: &amp;mut <a class="struct" href="https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html" title="struct core::fmt::Formatter">Formatter</a>) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/core/fmt/type.Result.html" title="type core::fmt::Result">Result</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/address.rs.html#128-130' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Formats the value using the given formatter. <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt">Read more</a></p>
+</div></div><h3 id='impl-Display' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/fmt/trait.Display.html" title="trait core::fmt::Display">Display</a> for <a class="struct" href="../../comm/address/struct.Address.html" title="struct comm::address::Address">Address</a></code><a href='#impl-Display' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/address.rs.html#133-137' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.fmt-1' class="method"><span id='fmt.v-1' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Display.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, f: &amp;mut <a class="struct" href="https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html" title="struct core::fmt::Formatter">Formatter</a>) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/core/fmt/type.Result.html" title="type core::fmt::Result">Result</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/address.rs.html#134-136' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Formats the value using the given formatter. <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Display.html#tymethod.fmt">Read more</a></p>
+</div></div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>↑</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>↓</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>↹</dt>
+                    <dd>Switch tab</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt style="width:31px;">+ / -</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "comm";
+    </script>
+    <script src="../../main.js"></script>
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>

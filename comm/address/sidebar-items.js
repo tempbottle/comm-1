@@ -1,0 +1,1 @@
+initSidebarItems({"constant":[["LENGTH",""]],"struct":[["Address","An `Address` can be used to address anything that is `Addressable`. `Node`s, for example, have an `Address`. Every `client::messages::TextMessage` has an `Address` as well."]],"trait":[["Addressable","Anything that needs to be uniquely addressed can implement `Addressable`."]]});

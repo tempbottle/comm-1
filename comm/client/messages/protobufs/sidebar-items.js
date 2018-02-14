@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["Envelope_Type",""]],"fn":[["file_descriptor_proto",""]],"struct":[["Envelope",""],["MessageAcknowledgement",""],["TextMessage",""]]});

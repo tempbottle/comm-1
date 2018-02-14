@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `Client` struct in crate `comm`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, Client">
+
+    <title>comm::client::Client - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc struct">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'>Struct Client</p><div class="block items"><a class="sidebar-title" href="#methods">Methods</a><div class="sidebar-links"><a href="#method.new">new</a><a href="#method.run">run</a><a href="#method.register_event_listener">register_event_listener</a></div><a class="sidebar-title" href="#implementations">Trait Implementations</a><div class="sidebar-links"><a href="#impl-Handler">Handler</a></div></div><p class='location'><a href='../index.html'>comm</a>::<wbr><a href='index.html'>client</a></p><script>window.sidebarCurrent = {name: 'Client', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>comm</a>::<wbr><a href='index.html'>client</a>::<wbr><a class="struct" href=''>Client</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../../src/comm/client/mod.rs.html#75-83' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct Client { /* fields omitted */ }</pre><div class='docblock'><p>A <code>Client</code> handles receiving, processing, relaying, etc. of messages in the communication
+network. It internalizes all the complex logic that is specific to messaging, and exposes a few
+commands view a <code>TaskSender</code> and events via <code>Events</code>.</p>
+</div>
+                    <h2 id='methods' class='small-section-header'>
+                      Methods<a href='#methods' class='anchor'></a>
+                    </h2>
+                <h3 id='impl' class='impl'><span class='in-band'><code>impl <a class="struct" href="../../comm/client/struct.Client.html" title="struct comm::client::Client">Client</a></code><a href='#impl' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/client/mod.rs.html#85-234' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.new' class="method"><span id='new.v' class='invisible'><code>pub fn <a href='#method.new' class='fnname'>new</a>(address: <a class="struct" href="../../comm/address/struct.Address.html" title="struct comm::address::Address">Address</a>) -&gt; <a class="struct" href="../../comm/client/struct.Client.html" title="struct comm::client::Client">Client</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/client/mod.rs.html#88-98' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Creates a new <code>Client</code>. <code>address</code> is the address of this client, i.e. where other clients
+should send messages intended for this client.</p>
+</div><h4 id='method.run' class="method"><span id='run.v' class='invisible'><code>pub fn <a href='#method.run' class='fnname'>run</a>(self, network: <a class="struct" href="../../comm/network/struct.Network.html" title="struct comm::network::Network">Network</a>) -&gt; <a class="type" href="../../comm/client/type.TaskSender.html" title="type comm::client::TaskSender">TaskSender</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/client/mod.rs.html#102-122' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Starts a <code>Client</code> in its own thread and returns its task sender. This method consumes the
+<code>Client</code>, so all event listeners must be registered first.</p>
+</div><h4 id='method.register_event_listener' class="method"><span id='register_event_listener.v' class='invisible'><code>pub fn <a href='#method.register_event_listener' class='fnname'>register_event_listener</a>(&amp;mut self, event_listener: <a class="struct" href="https://doc.rust-lang.org/nightly/std/sync/mpsc/struct.Sender.html" title="struct std::sync::mpsc::Sender">Sender</a>&lt;<a class="enum" href="../../comm/client/enum.Event.html" title="enum comm::client::Event">Event</a>&gt;)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/client/mod.rs.html#126-128' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Registers an event listener that should be sent every <code>Event</code> the client emits.</p>
+</div></div>
+            <h2 id='implementations' class='small-section-header'>
+              Trait Implementations<a href='#implementations' class='anchor'></a>
+            </h2>
+        <h3 id='impl-Handler' class='impl'><span class='in-band'><code>impl <a class="trait" href="../../mio/handler/trait.Handler.html" title="trait mio::handler::Handler">Handler</a> for <a class="struct" href="../../comm/client/struct.Client.html" title="struct comm::client::Client">Client</a></code><a href='#impl-Handler' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/client/mod.rs.html#236-253' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='associatedtype.Timeout' class="type"><span id='Timeout.t' class='invisible'><code>type <a href='../../mio/handler/trait.Handler.html#associatedtype.Timeout' class="type">Timeout</a> = <a class="enum" href="../../comm/client/enum.ScheduledTask.html" title="enum comm::client::ScheduledTask">ScheduledTask</a></code></span></h4>
+<h4 id='associatedtype.Message' class="type"><span id='Message.t' class='invisible'><code>type <a href='../../mio/handler/trait.Handler.html#associatedtype.Message' class="type">Message</a> = <a class="enum" href="../../comm/client/enum.Task.html" title="enum comm::client::Task">Task</a></code></span></h4>
+<h4 id='method.notify' class="method"><span id='notify.v' class='invisible'><code>fn <a href='../../mio/handler/trait.Handler.html#method.notify' class='fnname'>notify</a>(&amp;mut self, event_loop: &amp;mut <a class="struct" href="../../mio/event_loop/struct.EventLoop.html" title="struct mio::event_loop::EventLoop">EventLoop</a>&lt;<a class="struct" href="../../comm/client/struct.Client.html" title="struct comm::client::Client">Client</a>&gt;, task: <a class="enum" href="../../comm/client/enum.Task.html" title="enum comm::client::Task">Task</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/client/mod.rs.html#240-246' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Invoked when a message has been received via the event loop&#39;s channel.</p>
+</div><h4 id='method.timeout' class="method"><span id='timeout.v' class='invisible'><code>fn <a href='../../mio/handler/trait.Handler.html#method.timeout' class='fnname'>timeout</a>(&amp;mut self, event_loop: &amp;mut <a class="struct" href="../../mio/event_loop/struct.EventLoop.html" title="struct mio::event_loop::EventLoop">EventLoop</a>&lt;<a class="struct" href="../../comm/client/struct.Client.html" title="struct comm::client::Client">Client</a>&gt;, task: <a class="enum" href="../../comm/client/enum.ScheduledTask.html" title="enum comm::client::ScheduledTask">ScheduledTask</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/comm/client/mod.rs.html#248-252' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Invoked when a timeout has completed.</p>
+</div><h4 id='method.ready' class="method"><span id='ready.v' class='invisible'><code>fn <a href='../../mio/handler/trait.Handler.html#method.ready' class='fnname'>ready</a>(<br>&nbsp;&nbsp;&nbsp;&nbsp;&amp;mut self, <br>&nbsp;&nbsp;&nbsp;&nbsp;event_loop: &amp;mut <a class="struct" href="../../mio/event_loop/struct.EventLoop.html" title="struct mio::event_loop::EventLoop">EventLoop</a>&lt;Self&gt;, <br>&nbsp;&nbsp;&nbsp;&nbsp;token: <a class="struct" href="../../mio/token/struct.Token.html" title="struct mio::token::Token">Token</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;events: <a class="struct" href="../../mio/event/struct.EventSet.html" title="struct mio::event::EventSet">EventSet</a><br>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/mio/handler.rs.html#18-19' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Invoked when the socket represented by <code>token</code> is ready to be operated on. <code>events</code> indicates the specific operations that are ready to be performed. <a href="../../mio/handler/trait.Handler.html#method.ready">Read more</a></p>
+</div><h4 id='method.interrupted' class="method"><span id='interrupted.v' class='invisible'><code>fn <a href='../../mio/handler/trait.Handler.html#method.interrupted' class='fnname'>interrupted</a>(&amp;mut self, event_loop: &amp;mut <a class="struct" href="../../mio/event_loop/struct.EventLoop.html" title="struct mio::event_loop::EventLoop">EventLoop</a>&lt;Self&gt;)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/mio/handler.rs.html#30-31' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Invoked when <code>EventLoop</code> has been interrupted by a signal interrupt.</p>
+</div><h4 id='method.tick' class="method"><span id='tick.v' class='invisible'><code>fn <a href='../../mio/handler/trait.Handler.html#method.tick' class='fnname'>tick</a>(&amp;mut self, event_loop: &amp;mut <a class="struct" href="../../mio/event_loop/struct.EventLoop.html" title="struct mio::event_loop::EventLoop">EventLoop</a>&lt;Self&gt;)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/mio/handler.rs.html#34-35' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Invoked at the end of an event loop tick.</p>
+</div></div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>↑</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>↓</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>↹</dt>
+                    <dd>Switch tab</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt style="width:31px;">+ / -</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "comm";
+    </script>
+    <script src="../../main.js"></script>
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>
