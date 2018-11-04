@@ -30,11 +30,8 @@ Please read the [protocol][protocol] for a more detailed overview.
 
 ## Development
 
-You need to have the protobuf crate installed and in your path. Add your multirust
-crate bin path to your `PATH` if you use multirust:
-
-    cargo install protobuf
-    PATH=~/.multirust/toolchains/stable/cargo/bin:$PATH
+comm targets Rust stable (currently 1.30). It depends on protobuf being
+installed.
 
 ## Usage
 

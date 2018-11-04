@@ -29,3 +29,6 @@ rust-crypto = "0.2.35"
 rustc-serialize = "0.3"
 stun = "0.0.2"
 time = "0.1.35"
+
+[build-dependencies]
+protoc = "2.1.4"
