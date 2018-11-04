@@ -164,8 +164,15 @@ impl Network {
                                 if encounted_new_node {
                                     self.continue_bootstrap(event_loop);
                                 } else {
+                                    // TODO: Extract finish_bootstrap()
                                     self.continue_health_check(event_loop);
-                                    self.continue_refresh(event_loop)
+                                    self.continue_refresh(event_loop);
+                                    match self.status {
+                                        Status::Bootstrapping => {
+                                            self.status = Status::Idle;
+                                        }
+                                        _ => { }
+                                    }
                                 }
                             }
                             Some(TableAction::HealthCheck(_)) => {
@@ -177,12 +184,6 @@ impl Network {
                             None => { }
                         }
 
-                        match self.status {
-                            Status::Bootstrapping => {
-                                self.status = Status::Idle;
-                            }
-                            _ => { }
-                        }
                     }
                     Response::Packet => {
                         if let Some(mut origin) = self.routing_table.find_node(&origin_address) {
