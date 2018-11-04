@@ -1,7 +1,7 @@
 use address::{Address, Addressable};
 use messages;
 use std::cmp;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::net::{SocketAddr, ToSocketAddrs, UdpSocket, IpAddr, Ipv4Addr};
 use time;
@@ -12,15 +12,6 @@ pub const FAILED_TO_RESPOND_THRESHOLD: usize = 5;
 
 /// A node becomes questionable if it hasn't been heard from in this many minutes.
 pub const MINUTES_UNTIL_QUESTIONABLE: i64 = 15;
-
-/// Deserialize a `Node` from a protobuf.
-pub fn deserialize(message: &messages::protobufs::Node) -> Node {
-    let ip = message.get_ip_address();
-    let ip = Ipv4Addr::new(ip[0], ip[1], ip[2], ip[3]);
-    let port = message.get_port() as u16;
-    let address = Address::from_str(message.get_id()).unwrap();
-    Node::from_socket_addrs(address, (ip, port)).unwrap()
-}
 
 /// Anything that needs to be serialized for transfer or storage.
 ///
@@ -35,6 +26,79 @@ pub enum Status {
     Good,
     Questionable,
     Bad
+}
+
+#[derive(Debug, Eq, Hash, PartialEq)]
+enum Transport {
+    Udp(UdpTransport)
+}
+
+impl Transport {
+    /// Creates a Transport trait object (thus it must be boxed)
+    fn deserialize(message: &messages::protobufs::Transport) -> Transport {
+        match message.get_transport_type() {
+            messages::protobufs::Transport_Type::UDP => {
+                let message = message.get_udp_transport();
+                let ip = message.get_ip_address();
+                let ip = Ipv4Addr::new(ip[0], ip[1], ip[2], ip[3]);
+                let port = message.get_port() as u16;
+                Transport::Udp(UdpTransport::new(SocketAddr::new(IpAddr::V4(ip), port)))
+            }
+        }
+    }
+
+    fn send(&self, message: Vec<u8>) {
+        match self {
+            Transport::Udp(transport) => transport.send(message)
+        }
+    }
+
+    fn serialize(&self) -> messages::protobufs::Transport {
+        match self {
+            Transport::Udp(transport) => transport.serialize()
+        }
+    }
+}
+
+#[derive(Eq, Hash, PartialEq)]
+struct UdpTransport {
+    socket_address: SocketAddr
+}
+
+impl UdpTransport {
+    fn new(socket_address: SocketAddr) -> UdpTransport {
+        UdpTransport {
+            socket_address: socket_address
+        }
+    }
+
+    fn send(&self, message: Vec<u8>) {
+        let socket = UdpSocket::bind("0.0.0.0:0").unwrap();
+        socket.send_to(&message[..], self.socket_address).unwrap();
+    }
+
+    fn serialize(&self) -> messages::protobufs::Transport {
+        let mut transport = messages::protobufs::UdpTransport::new();
+        match self.socket_address.ip() {
+            IpAddr::V4(ipv4_addr) => {
+                transport.set_ip_address(ipv4_addr.octets().iter().cloned().collect());
+            }
+            IpAddr::V6(_) => {
+                // TODO ipv6 node support
+            }
+        }
+        transport.set_port(self.socket_address.port() as u32);
+        let mut message = messages::protobufs::Transport::new();
+        message.set_transport_type(messages::protobufs::Transport_Type::UDP);
+        message.set_udp_transport(transport);
+        message
+    }
+}
+
+impl fmt::Debug for UdpTransport {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "UdpTransport {{ {} }}", self.socket_address)
+    }
 }
 
 /// A `Node` is a peer in the network. It represents another network participant such as ourself.
@@ -55,7 +119,7 @@ pub enum Status {
 /// network.
 pub struct Node {
     address: Address,
-    socket_address: SocketAddr,
+    transports: HashSet<Transport>,
     pending_queries: HashMap<TransactionId, time::Tm>,
     has_ever_responded: bool,
     last_received_query: time::Tm,
@@ -63,22 +127,38 @@ pub struct Node {
 }
 
 impl Node {
+    /// Deserialize a `Node` from a protobuf.
+    pub fn deserialize(message: &messages::protobufs::Node) -> Node {
+        let address = Address::from_str(message.get_id()).unwrap();
+        let transports = message.get_transports().
+            iter().
+            map(|t| Transport::deserialize(t)).
+            collect();
+        Node::new(address, transports)
+    }
+
     pub fn from_socket_addrs<S: ToSocketAddrs>(address: Address, socket_address: S) -> Result<Node, String> {
         match socket_address.to_socket_addrs().ok().and_then(|mut addrs| addrs.next()) {
             Some(s) => {
-                Ok(Node {
-                    address: address,
-                    socket_address: s,
-                    pending_queries: HashMap::new(),
-                    has_ever_responded: false,
-                    last_received_query: time::now_utc(),
-                    last_received_response: time::now_utc()
-                })
+                let mut transports = HashSet::new();
+                transports.insert(Transport::Udp(UdpTransport::new(s)));
+                Ok(Node::new(address, transports))
             }
 
             None => {
                 Err(String::from("Couldn't parse socket address"))
             }
+        }
+    }
+
+    fn new(address: Address, transports: HashSet<Transport>) -> Node {
+        Node {
+            address: address,
+            transports: transports,
+            pending_queries: HashMap::new(),
+            has_ever_responded: false,
+            last_received_query: time::now_utc(),
+            last_received_response: time::now_utc()
         }
     }
 
@@ -158,13 +238,14 @@ impl Node {
         }
     }
 
-    /// Send an encoded message to a node via its UDP socket.
+    /// Send an encoded message to a node via its transports. A node may have numerous transports
+    /// (aka connections).
     ///
-    /// In the future, a node will support numerous connection types, and it should be send using
-    /// all connections that are live (i.e. not bad)
+    /// TODO: There should be some logic to determine which transports are still good.
     pub fn send(&self, message: Vec<u8>) {
-        let socket = UdpSocket::bind("0.0.0.0:0").unwrap();
-        socket.send_to(&message[..], self.socket_address).unwrap();
+        for transport in &self.transports {
+            transport.send(message.clone());
+        }
     }
 
     /// Records that we're expecting a response from this node for the TID `transaction_id`.
@@ -186,7 +267,9 @@ impl Node {
     /// than updating its only connection, it should just add another to the set and keep track of
     /// the most reliable connection.
     pub fn update_connection(&mut self, other_node: Self) {
-        self.socket_address = other_node.socket_address;
+        for transport in other_node.transports {
+            self.transports.insert(transport);
+        }
     }
 }
 
@@ -200,15 +283,9 @@ impl Serialize for Node {
     fn serialize(&self) -> messages::protobufs::Node {
         let mut message = messages::protobufs::Node::new();
         message.set_id(self.address.to_str());
-        match self.socket_address.ip() {
-            IpAddr::V4(ipv4_addr) => {
-                message.set_ip_address(ipv4_addr.octets().iter().cloned().collect());
-            }
-            IpAddr::V6(_) => {
-                // TODO ipv6 node support
-            }
-        }
-        message.set_port(self.socket_address.port() as u32);
+        let transports = self.transports.iter().map(|t| t.serialize()).collect();
+        let transports = protobuf::RepeatedField::from_vec(transports);
+        message.set_transports(transports);
         message
     }
 }
@@ -221,25 +298,27 @@ impl Addressable for Node {
 
 impl fmt::Debug for Node {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Node {{ {}, {} }}", self.address, self.socket_address)
+        write!(f, "Node {{ {}, {:?} }}", self.address, self.transports)
     }
 }
 
 #[cfg(test)]
 pub mod tests {
     use address::Address;
-    use std::collections::HashMap;
+    use std::collections::{HashMap, HashSet};
     use std::net::ToSocketAddrs;
-    use super::{FAILED_TO_RESPOND_THRESHOLD, MINUTES_UNTIL_QUESTIONABLE, Node, Serialize};
+    use super::{FAILED_TO_RESPOND_THRESHOLD, MINUTES_UNTIL_QUESTIONABLE, Node, Serialize, Transport, UdpTransport};
     use time;
     use transaction::TransactionId;
 
     pub fn new(address: Address, last_received_response: time::Tm, pending_queries: HashMap<TransactionId, time::Tm>) -> Node {
         use rand::{thread_rng, Rng};
         let port = thread_rng().gen_range(1000, 10000);
+        let mut transports = HashSet::new();
+        transports.insert(Transport::Udp(UdpTransport::new(("0.0.0.0", port).to_socket_addrs().unwrap().next().unwrap())));
         Node {
             address: address,
-            socket_address: ("0.0.0.0", port).to_socket_addrs().unwrap().next().unwrap(),
+            transports: transports,
             pending_queries: pending_queries,
             has_ever_responded: false,
             last_received_query: time::empty_tm(),
@@ -292,12 +371,18 @@ pub mod tests {
     #[test]
     fn test_serialize() {
         use messages;
-        let mut protobuf = messages::protobufs::Node::new();
-        protobuf.set_id("8b45e4bd1c6acb88bebf6407d16205f567e62a3e".to_string());
-        protobuf.set_ip_address(vec![192, 168, 1, 2]);
-        protobuf.set_port(9000);
+        let mut node_message = messages::protobufs::Node::new();
+        let mut transport_message = messages::protobufs::Transport::new();
+        let mut udp_transport_message = messages::protobufs::UdpTransport::new();
+        udp_transport_message.set_ip_address(vec![192, 168, 1, 2]);
+        udp_transport_message.set_port(9000);
+        transport_message.set_transport_type(messages::protobufs::Transport_Type::UDP);
+        transport_message.set_udp_transport(udp_transport_message);
+        node_message.set_id("8b45e4bd1c6acb88bebf6407d16205f567e62a3e".to_string());
+        node_message.set_transports(protobuf::RepeatedField::from_vec(vec![transport_message]));
+
         let address = Address::for_content("some string");
         let node = Node::from_socket_addrs(address, ("192.168.1.2", 9000)).unwrap();
-        assert_eq!(node.serialize(), protobuf);
+        assert_eq!(node.serialize(), node_message);
     }
 }

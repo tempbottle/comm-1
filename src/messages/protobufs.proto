@@ -1,9 +1,21 @@
 // Types
 
+message UdpTransport {
+    required bytes ip_address = 1;
+    required uint32 port = 2;
+}
+
+message Transport {
+    enum Type {
+        UDP = 1;
+    }
+    required Type transport_type = 1;
+    optional UdpTransport udp_transport = 2;
+}
+
 message Node {
     required string id = 1;
-    required bytes ip_address = 2;
-    required uint32 port = 3;
+    repeated Transport transports = 2;
 }
 
 // Messages

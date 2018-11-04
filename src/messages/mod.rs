@@ -36,39 +36,39 @@ pub mod incoming {
                 match message.get_message_type() {
                     protobufs::Envelope_Type::FIND_NODE_QUERY => {
                         let find_node_query = message.get_find_node_query();
-                        let origin = node::deserialize(find_node_query.get_origin());
+                        let origin = node::Node::deserialize(find_node_query.get_origin());
                         let target = Address::from_str(find_node_query.get_target()).unwrap();
                         Ok(Message::Query(transaction_id, origin, Query::FindNode(target)))
                     }
                     protobufs::Envelope_Type::FIND_NODE_RESPONSE => {
                         let find_node_response = message.get_find_node_response();
-                        let origin = node::deserialize(find_node_response.get_origin());
+                        let origin = node::Node::deserialize(find_node_response.get_origin());
                         let nodes = find_node_response.get_nodes();
                         let nodes: Vec<Node> = nodes.iter().map(|n| {
-                            let node: Node = node::deserialize(n);
+                            let node: Node = node::Node::deserialize(n);
                             node
                         }).collect();
                         Ok(Message::Response(transaction_id, origin, Response::FindNode(nodes)))
                     }
                     protobufs::Envelope_Type::PING_QUERY => {
                         let ping_query = message.get_ping_query();
-                        let origin = node::deserialize(ping_query.get_origin());
+                        let origin = node::Node::deserialize(ping_query.get_origin());
                         Ok(Message::Query(transaction_id, origin, Query::Ping))
                     },
                     protobufs::Envelope_Type::PING_RESPONSE => {
                         let ping_response = message.get_ping_response();
-                        let origin = node::deserialize(ping_response.get_origin());
+                        let origin = node::Node::deserialize(ping_response.get_origin());
                         Ok(Message::Response(transaction_id, origin, Response::Ping))
                     },
                     protobufs::Envelope_Type::PACKET_QUERY => {
                         let packet_query = message.get_packet_query();
-                        let origin = node::deserialize(packet_query.get_origin());
+                        let origin = node::Node::deserialize(packet_query.get_origin());
                         let payload = packet_query.get_payload();
                         Ok(Message::Query(transaction_id, origin, Query::Packet(payload.to_vec())))
                     },
                     protobufs::Envelope_Type::PACKET_RESPONSE => {
                         let response = message.get_packet_response();
-                        let origin = node::deserialize(response.get_origin());
+                        let origin = node::Node::deserialize(response.get_origin());
                         Ok(Message::Response(transaction_id, origin, Response::Packet))
                     }
                 }
