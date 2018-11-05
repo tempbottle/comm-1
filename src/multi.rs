@@ -5,8 +5,11 @@ extern crate log;
 extern crate num;
 
 use num::bigint::ToBigUint;
+use std::collections::HashSet;
 use std::env;
+use std::net::ToSocketAddrs;
 use std::thread;
+
 use comm::address::{Address, LENGTH};
 use comm::client;
 use comm::network;
@@ -32,7 +35,10 @@ pub fn start_multiple(host: &str, port_start: u16, port_end: u16, router_host: O
 
         let routers: Vec<node::Node> = match router_host {
             Some(host) => {
-                let router_node = node::Node::from_socket_addrs(Address::null(), host).unwrap();
+                let mut transports = HashSet::new();
+                transports.insert(node::Transport::Udp(node::UdpTransport::new(
+                            host.to_socket_addrs().unwrap().next().unwrap())));
+                let router_node = node::Node::new(Address::null(), transports);
                 vec![router_node]
             }
             None => vec![]

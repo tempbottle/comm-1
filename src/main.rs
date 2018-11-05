@@ -9,8 +9,10 @@ extern crate rand;
 extern crate rustc_serialize;
 extern crate time;
 
+use std::collections::HashSet;
 use std::env;
 use std::io;
+use std::net::ToSocketAddrs;
 use std::sync::mpsc;
 use std::thread;
 
@@ -47,7 +49,10 @@ fn main() {
 
     let routers: Vec<node::Node> = match args.get(3) {
         Some(router_address) => {
-            let router_node = node::Node::from_socket_addrs(Address::null(), router_address.as_str()).unwrap();
+            let mut transports = HashSet::new();
+            transports.insert(node::Transport::Udp(node::UdpTransport::new(
+                        router_address.as_str().to_socket_addrs().unwrap().next().unwrap())));
+            let router_node = node::Node::new(Address::null(), transports);
             vec![router_node]
         }
         None => vec![]

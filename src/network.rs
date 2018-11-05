@@ -1,9 +1,9 @@
 use address::{Addressable, Address};
 use messages::outgoing;
 use mio;
-use node::Node;
+use node::{Node, Transport, UdpTransport};
 use routing_table::{InsertOutcome, InsertionResult, RoutingTable};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io::Cursor;
 use std::net::{UdpSocket, ToSocketAddrs, SocketAddr};
 use std::sync::mpsc;
@@ -59,7 +59,9 @@ impl Network {
     pub fn new<T: ToSocketAddrs>(self_address: Address, host: T, routers: Vec<Node>) -> Network {
         let host = host.to_socket_addrs().unwrap().next().unwrap();
         let mapped_host = stun::get_mapped_address(host).expect("Couldn't STUN myself");
-        let self_node = Node::from_socket_addrs(self_address, mapped_host).unwrap();
+        let mut transports = HashSet::new();
+        transports.insert(Transport::Udp(UdpTransport::new(mapped_host)));
+        let self_node = Node::new(self_address, transports);
         let routing_table = RoutingTable::new(8, self_address, routers);
 
         Network {

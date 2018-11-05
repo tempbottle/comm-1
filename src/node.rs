@@ -29,7 +29,7 @@ pub enum Status {
 }
 
 #[derive(Debug, Eq, Hash, PartialEq)]
-enum Transport {
+pub enum Transport {
     Udp(UdpTransport)
 }
 
@@ -61,12 +61,12 @@ impl Transport {
 }
 
 #[derive(Eq, Hash, PartialEq)]
-struct UdpTransport {
+pub struct UdpTransport {
     socket_address: SocketAddr
 }
 
 impl UdpTransport {
-    fn new(socket_address: SocketAddr) -> UdpTransport {
+    pub fn new(socket_address: SocketAddr) -> UdpTransport {
         UdpTransport {
             socket_address: socket_address
         }
@@ -137,21 +137,7 @@ impl Node {
         Node::new(address, transports)
     }
 
-    pub fn from_socket_addrs<S: ToSocketAddrs>(address: Address, socket_address: S) -> Result<Node, String> {
-        match socket_address.to_socket_addrs().ok().and_then(|mut addrs| addrs.next()) {
-            Some(s) => {
-                let mut transports = HashSet::new();
-                transports.insert(Transport::Udp(UdpTransport::new(s)));
-                Ok(Node::new(address, transports))
-            }
-
-            None => {
-                Err(String::from("Couldn't parse socket address"))
-            }
-        }
-    }
-
-    fn new(address: Address, transports: HashSet<Transport>) -> Node {
+    pub fn new(address: Address, transports: HashSet<Transport>) -> Node {
         Node {
             address: address,
             transports: transports,
@@ -352,7 +338,8 @@ pub mod tests {
     #[test]
     fn test_received_response() {
         let address = Address::for_content("some string");
-        let mut node = Node::from_socket_addrs(address, ("0.0.0.0", 9000)).unwrap();
+        let transports = HashSet::new();
+        let mut node = Node::new(address, transports);
 
         // When it's not expecting the response
         node.received_response(1);
@@ -382,7 +369,10 @@ pub mod tests {
         node_message.set_transports(protobuf::RepeatedField::from_vec(vec![transport_message]));
 
         let address = Address::for_content("some string");
-        let node = Node::from_socket_addrs(address, ("192.168.1.2", 9000)).unwrap();
+        let socket_address = ("192.168.1.2", 9000).to_socket_addrs().unwrap().next().unwrap();
+        let mut transports = HashSet::new();
+        transports.insert(Transport::Udp(UdpTransport::new(socket_address)));
+        let node = Node::new(address, transports);
         assert_eq!(node.serialize(), node_message);
     }
 }
