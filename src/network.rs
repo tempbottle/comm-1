@@ -1,14 +1,14 @@
 use address::{Addressable, Address};
 use messages::outgoing;
 use mio;
-use node::{Node, Transport, UdpTransport};
+use node::{Node};
 use routing_table::{InsertOutcome, InsertionResult, RoutingTable};
+use servers::{Server, UdpServer};
 use std::collections::{HashMap, HashSet};
 use std::io::Cursor;
-use std::net::{UdpSocket, ToSocketAddrs, SocketAddr};
+use std::net::ToSocketAddrs;
 use std::sync::mpsc;
 use std::thread;
-use stun;
 use transaction::{TransactionId, TransactionIdGenerator};
 
 #[derive(Clone, Debug)]
@@ -45,7 +45,7 @@ enum Status {
 }
 
 pub struct Network {
-    host: SocketAddr,
+    servers: Vec<Server>,
     routing_table: RoutingTable,
     self_node: Node,
     transaction_ids: TransactionIdGenerator,
@@ -58,14 +58,16 @@ pub struct Network {
 impl Network {
     pub fn new<T: ToSocketAddrs>(self_address: Address, host: T, routers: Vec<Node>) -> Network {
         let host = host.to_socket_addrs().unwrap().next().unwrap();
-        let mapped_host = stun::get_mapped_address(host).expect("Couldn't STUN myself");
+        let mut servers = vec![];
+        let server = Server::Udp(UdpServer::new(host));
         let mut transports = HashSet::new();
-        transports.insert(Transport::Udp(UdpTransport::new(mapped_host)));
+        transports.insert(server.transport());
+        servers.push(server);
         let self_node = Node::new(self_address, transports);
         let routing_table = RoutingTable::new(8, self_address, routers);
 
         Network {
-            host: host,
+            servers: servers,
             routing_table: routing_table,
             self_node: self_node,
             transaction_ids: TransactionIdGenerator::new(),
@@ -81,8 +83,10 @@ impl Network {
         event_loop_config.notify_capacity(16384);
         let mut event_loop = mio::EventLoop::configured(event_loop_config).unwrap();
 
-        let shutdown_signal = create_incoming_udp_channel(self.host, event_loop.channel());
-        self.shutdown_signals.push(shutdown_signal);
+        for server in &self.servers {
+            let shutdown_signal = server.run(event_loop.channel());
+            self.shutdown_signals.push(shutdown_signal);
+        }
 
         event_loop.channel().send(OneshotTask::StartBootstrap).unwrap();
         info!("Running server at {:?}", self.self_node);
@@ -356,47 +360,4 @@ impl mio::Handler for Handler {
             ScheduledTask::ContinueRefresh => self.network.continue_refresh(event_loop)
         }
     }
-}
-
-// TODO: I'd rather have some kind of select on two channels instead of this nested non-blocking
-// recv. It only works because of the 10ms timeout on the socket.
-fn create_incoming_udp_channel(host: SocketAddr, sender: TaskSender) -> mpsc::Sender<mpsc::Sender<()>> {
-    use std::time::Duration;
-
-    let (shutdown_sender, shutdown_receiver) = mpsc::channel::<mpsc::Sender<()>>();
-
-    thread::spawn(move || {
-        let host = ("0.0.0.0", host.port());
-        let socket = UdpSocket::bind(host).unwrap();
-        socket.set_read_timeout(Some(Duration::from_millis(10))).unwrap();
-
-        loop {
-            match shutdown_receiver.try_recv() {
-                Err(mpsc::TryRecvError::Empty) => {
-                    let mut buf = [0; 4096];
-                    match socket.recv(&mut buf) {
-                        Ok(size) => {
-                            sender.send(OneshotTask::Incoming(buf[..size].iter().cloned().collect()))
-                                .unwrap_or_else(|err| info!("Couldn't handling incoming: {:?}", err));
-                        }
-                        Err(_) => {
-                            //warn!("Error receiving from server: {}", e)
-                        }
-                    }
-                }
-
-                Err(mpsc::TryRecvError::Disconnected) => {
-                    // The other end of the shutdown_receiver was dropped
-                    break
-                }
-
-                Ok(sentinel) => {
-                    sentinel.send(()).unwrap();
-                    break;
-                }
-            }
-        }
-
-    });
-    shutdown_sender
 }

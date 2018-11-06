@@ -3,7 +3,7 @@ use messages;
 use std::cmp;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
-use std::net::{SocketAddr, ToSocketAddrs, UdpSocket, IpAddr, Ipv4Addr};
+use std::net::{SocketAddr, UdpSocket, IpAddr, Ipv4Addr};
 use time;
 use transaction::TransactionId;
 

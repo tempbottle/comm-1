@@ -16,5 +16,6 @@ pub mod network;
 pub mod node;
 pub mod node_bucket;
 pub mod routing_table;
+pub mod servers;
 pub mod stun;
 pub mod transaction;

@@ -27,6 +27,7 @@ mod network;
 mod node;
 mod node_bucket;
 mod routing_table;
+mod servers;
 mod stun;
 mod transaction;
 
