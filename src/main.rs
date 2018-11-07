@@ -46,7 +46,9 @@ fn main() {
     let secret = args[1].clone();
 
     let address = Address::for_content(secret.as_str());
-    let host = args[2].as_str();
+
+    let host = args[2].as_str().to_socket_addrs().unwrap().next().unwrap();
+    let servers = vec![servers::Server::Udp(servers::UdpServer::new(host))];
 
     let routers: Vec<node::Node> = match args.get(3) {
         Some(router_address) => {
@@ -59,7 +61,7 @@ fn main() {
         None => vec![]
     };
 
-    let network = network::Network::new(address, host, routers);
+    let network = network::Network::new(address, servers, routers);
     let mut client = client::Client::new(address);
     let (event_sender, events) = mpsc::channel();
     client.register_event_listener(event_sender);

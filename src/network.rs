@@ -1,12 +1,11 @@
 use address::{Addressable, Address};
 use messages::outgoing;
 use mio;
-use node::{Node};
+use node::Node;
 use routing_table::{InsertOutcome, InsertionResult, RoutingTable};
-use servers::{Server, UdpServer};
+use servers::Server;
 use std::collections::{HashMap, HashSet};
 use std::io::Cursor;
-use std::net::ToSocketAddrs;
 use std::sync::mpsc;
 use std::thread;
 use transaction::{TransactionId, TransactionIdGenerator};
@@ -56,13 +55,12 @@ pub struct Network {
 }
 
 impl Network {
-    pub fn new<T: ToSocketAddrs>(self_address: Address, host: T, routers: Vec<Node>) -> Network {
-        let host = host.to_socket_addrs().unwrap().next().unwrap();
-        let mut servers = vec![];
-        let server = Server::Udp(UdpServer::new(host));
+    pub fn new(self_address: Address, servers: Vec<Server>, routers: Vec<Node>) -> Network {
         let mut transports = HashSet::new();
-        transports.insert(server.transport());
-        servers.push(server);
+        for server in &servers {
+            transports.insert(server.transport());
+        }
+
         let self_node = Node::new(self_address, transports);
         let routing_table = RoutingTable::new(8, self_address, routers);
 

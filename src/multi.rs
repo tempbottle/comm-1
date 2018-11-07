@@ -14,6 +14,7 @@ use comm::address::{Address, LENGTH};
 use comm::client;
 use comm::network;
 use comm::node;
+use comm::servers;
 
 /// Starts multiple nodes that are all connected to `host`.
 ///
@@ -46,7 +47,9 @@ pub fn start_multiple(host: &str, port_start: u16, port_end: u16, router_host: O
 
         let address = Address::random(&min, &max);
         let socket_address = (host, port);
-        let network = network::Network::new(address, socket_address, routers);
+        let socket_address = socket_address.to_socket_addrs().unwrap().next().unwrap();
+        let servers = vec![servers::Server::Udp(servers::UdpServer::new(socket_address))];
+        let network = network::Network::new(address, servers, routers);
         let client = client::Client::new(address);
         client.run(network);
         thread::sleep(std::time::Duration::from_millis(rampup));
