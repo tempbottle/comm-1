@@ -72,9 +72,13 @@ pub enum Server {
 }
 
 impl Server {
-    pub fn create(url: &str) -> Server {
-            let url = url.to_socket_addrs().expect("No socket address").next().expect("No socket address");
-            Server::Udp(UdpServer::new(url))
+    pub fn create(url: &str) -> Option<Server> {
+        if let Ok(mut socket_addrs) = url.to_socket_addrs() {
+            if let Some(socket_addr) = socket_addrs.next() {
+                return Some(Server::Udp(UdpServer::new(socket_addr)))
+            }
+        }
+        None
     }
 
     pub fn transport(&self) -> Transport {
@@ -86,6 +90,19 @@ impl Server {
     pub fn run(&self, sender: TaskSender) -> mpsc::Sender<mpsc::Sender<()>> {
         match self {
             Server::Udp(server) => server.run(sender)
+        }
+    }
+}
+
+mod tests {
+    use super::Server;
+
+    #[test]
+    fn it_creates_udp_servers() {
+        let server = Server::create("0.0.0.0:6667");
+        match server {
+            Some(Server::Udp(_)) => assert!(true),
+            _ => assert!(false)
         }
     }
 }

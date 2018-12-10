@@ -73,7 +73,7 @@ fn main() {
     let servers = matches
         .values_of("server")
         .expect("No servers")
-        .map(|url| servers::Server::create(url))
+        .map(|url| servers::Server::create(url).expect("Invalid server spec"))
         .collect();
 
     let routers: Vec<node::Node> = match matches.values_of("router") {
