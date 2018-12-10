@@ -1,5 +1,5 @@
 use std::sync::mpsc;
-use std::net::{UdpSocket, SocketAddr};
+use std::net::{ToSocketAddrs, UdpSocket, SocketAddr};
 
 use std::thread;
 use network::{OneshotTask, TaskSender};
@@ -72,6 +72,11 @@ pub enum Server {
 }
 
 impl Server {
+    pub fn create(url: &str) -> Server {
+            let url = url.to_socket_addrs().expect("No socket address").next().expect("No socket address");
+            Server::Udp(UdpServer::new(url))
+    }
+
     pub fn transport(&self) -> Transport {
         match self {
             Server::Udp(server) => server.transport()

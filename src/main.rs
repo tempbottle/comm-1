@@ -73,10 +73,7 @@ fn main() {
     let servers = matches
         .values_of("server")
         .expect("No servers")
-        .map(|url| {
-            let url = url.to_socket_addrs().expect("No socket address").next().expect("No socket address");
-            return servers::Server::Udp(servers::UdpServer::new(url))
-        })
+        .map(|url| servers::Server::create(url))
         .collect();
 
     let routers: Vec<node::Node> = match matches.values_of("router") {
