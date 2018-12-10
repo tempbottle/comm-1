@@ -1,4 +1,5 @@
 extern crate env_logger;
+extern crate clap;
 extern crate crypto;
 #[macro_use]
 extern crate log;
@@ -10,7 +11,6 @@ extern crate rustc_serialize;
 extern crate time;
 
 use std::collections::HashSet;
-use std::env;
 use std::io;
 use std::net::ToSocketAddrs;
 use std::sync::mpsc;
@@ -42,21 +42,51 @@ mod transaction;
 ///     comm alpha 0.0.0.0:6667 10.0.1.13
 fn main() {
     env_logger::init().unwrap();
-    let args: Vec<String> = env::args().collect();
-    let secret = args[1].clone();
 
-    let address = Address::for_content(secret.as_str());
+    let matches = clap::App::new("comm")
+        .version("0.1.0")
+        .author("Zac Stewart <zgstewart@gmail.com>")
+        .arg(clap::Arg::with_name("secret")
+             .long("secret")
+             .value_name("SECRET")
+             .required(true)
+             .takes_value(true))
+        .arg(clap::Arg::with_name("server")
+             .long("server")
+             .short("s")
+             .value_name("URL")
+             .takes_value(true)
+             .required(true)
+             .multiple(true))
+        .arg(clap::Arg::with_name("router")
+             .long("router")
+             .short("r")
+             .value_name("URL")
+             .takes_value(true)
+             .multiple(true))
+        .get_matches();
 
-    let host = args[2].as_str().to_socket_addrs().unwrap().next().unwrap();
-    let servers = vec![servers::Server::Udp(servers::UdpServer::new(host))];
+    let secret = matches.value_of("server").expect("No secret");
 
-    let routers: Vec<node::Node> = match args.get(3) {
-        Some(router_address) => {
-            let mut transports = HashSet::new();
-            transports.insert(node::Transport::Udp(node::UdpTransport::new(
-                        router_address.as_str().to_socket_addrs().unwrap().next().unwrap())));
-            let router_node = node::Node::new(Address::null(), transports);
-            vec![router_node]
+    let address = Address::for_content(secret);
+
+    let servers = matches
+        .values_of("server")
+        .expect("No servers")
+        .map(|url| {
+            let url = url.to_socket_addrs().expect("No socket address").next().expect("No socket address");
+            return servers::Server::Udp(servers::UdpServer::new(url))
+        })
+        .collect();
+
+    let routers: Vec<node::Node> = match matches.values_of("router") {
+        Some(urls) => {
+            urls.map(|url| {
+                let mut transports = HashSet::new();
+                transports.insert(node::Transport::Udp(node::UdpTransport::new(
+                            url.to_socket_addrs().unwrap().next().unwrap())));
+                node::Node::new(Address::null(), transports)
+            }).collect()
         }
         None => vec![]
     };
