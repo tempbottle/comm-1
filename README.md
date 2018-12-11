@@ -52,7 +52,7 @@ entering its address, followed by a message:
 
 ## Documentation
 
-Documenation is still forthcoming, but many of the modules have doc comments.
+Documentation is still forthcoming, but many of the modules have doc comments.
 I'm still trying to figure out a good way to host rust docs out of GitHub
 Pages.
 
