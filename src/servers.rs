@@ -73,12 +73,20 @@ pub enum Server {
 
 impl Server {
     pub fn create(url: &str) -> Option<Server> {
-        if let Ok(mut socket_addrs) = url.to_socket_addrs() {
-            if let Some(socket_addr) = socket_addrs.next() {
-                return Some(Server::Udp(UdpServer::new(socket_addr)))
+        let parts: Vec<&str> = url.splitn(2, "://").collect();
+        let protocol = parts[0];
+        let host = parts[1];
+        match protocol {
+            "udp" => {
+                if let Ok(mut socket_addrs) = host.to_socket_addrs() {
+                    if let Some(socket_addr) = socket_addrs.next() {
+                        return Some(Server::Udp(UdpServer::new(socket_addr)))
+                    }
+                }
+                None
             }
+            _ => None
         }
-        None
     }
 
     pub fn transport(&self) -> Transport {
@@ -99,7 +107,7 @@ mod tests {
 
     #[test]
     fn it_creates_udp_servers() {
-        let server = Server::create("0.0.0.0:6667");
+        let server = Server::create("udp://0.0.0.0:6667");
         match server {
             Some(Server::Udp(_)) => assert!(true),
             _ => assert!(false)
