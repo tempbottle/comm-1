@@ -44,35 +44,36 @@ enum Status {
 }
 
 pub struct Network {
-    servers: Vec<Server>,
+    servers: HashMap<mio::Token, Server>,
     routing_table: RoutingTable,
     self_node: Node,
     transaction_ids: TransactionIdGenerator,
     status: Status,
     pending_actions: HashMap<TransactionId, TableAction>,
-    event_listeners: Vec<mpsc::Sender<Event>>,
-    shutdown_signals: Vec<mpsc::Sender<mpsc::Sender<()>>>
+    event_listeners: Vec<mpsc::Sender<Event>>
 }
 
 impl Network {
     pub fn new(self_address: Address, servers: Vec<Server>, routers: Vec<Node>) -> Network {
         let mut transports = HashSet::new();
-        for server in &servers {
+        let mut server_hash = HashMap::new();
+        for (i, server) in servers.into_iter().enumerate() {
+            let token = mio::Token(i);
             transports.insert(server.transport());
+            server_hash.insert(token, server);
         }
 
         let self_node = Node::new(self_address, transports);
         let routing_table = RoutingTable::new(8, self_address, routers);
 
         Network {
-            servers: servers,
+            servers: server_hash,
             routing_table: routing_table,
             self_node: self_node,
             transaction_ids: TransactionIdGenerator::new(),
             status: Status::Idle,
             pending_actions: HashMap::new(),
-            event_listeners: vec![],
-            shutdown_signals: vec![]
+            event_listeners: vec![]
         }
     }
 
@@ -81,9 +82,11 @@ impl Network {
         event_loop_config.notify_capacity(16384);
         let mut event_loop = mio::EventLoop::configured(event_loop_config).unwrap();
 
-        for server in &self.servers {
-            let shutdown_signal = server.run(event_loop.channel());
-            self.shutdown_signals.push(shutdown_signal);
+        for (token, server) in &mut self.servers.iter_mut() {
+            let evented = server.run();
+            event_loop
+                .register(evented, *token, mio::EventSet::readable(), mio::PollOpt::edge())
+                .expect("Couldn't register server to EventLoop");
         }
 
         event_loop.channel().send(OneshotTask::StartBootstrap).unwrap();
@@ -96,6 +99,10 @@ impl Network {
 
     pub fn register_event_listener(&mut self, event_listener: mpsc::Sender<Event>) {
         self.event_listeners.push(event_listener);
+    }
+
+    fn read_server(&self, token: mio::Token, event_loop: &mut mio::EventLoop<Handler>) {
+        self.servers[&token].read(event_loop.channel());
     }
 
     fn handle_incoming(&mut self, data: Vec<u8>, event_loop: &mut mio::EventLoop<Handler>) {
@@ -306,14 +313,6 @@ impl Network {
     }
 
     fn shutdown(&mut self, event_loop: &mut mio::EventLoop<Handler>) {
-        let sentinels: Vec<mpsc::Receiver<()>> = self.shutdown_signals.iter().map(|signal| {
-            let (sentinal_sender, sentinal_receiver) = mpsc::channel();
-            signal.send(sentinal_sender).expect("couldn't send shutdown signal");
-            sentinal_receiver
-        }).collect();
-        for sentinel in sentinels {
-            sentinel.recv().unwrap();
-        }
         event_loop.shutdown();
         self.broadcast_event(Event::Shutdown);
     }
@@ -340,6 +339,10 @@ impl Handler {
 impl mio::Handler for Handler {
     type Timeout = ScheduledTask;
     type Message = OneshotTask;
+
+    fn ready(&mut self, event_loop: &mut mio::EventLoop<Handler>, token: mio::Token, _: mio::EventSet) {
+        self.network.read_server(token, event_loop);
+    }
 
     fn notify(&mut self, event_loop: &mut mio::EventLoop<Handler>, task: OneshotTask) {
         match task {
